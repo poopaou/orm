@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
 public @interface Version {
 
   /**
-   * @return Version's field name. default "_version"
+   * Version's field name. default "_version".
    */
   String name() default "_version";
 }

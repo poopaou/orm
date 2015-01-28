@@ -124,15 +124,15 @@ public final class TypeDefinition {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
+  public boolean equals(Object other) {
+    if (this == other) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (other == null || getClass() != other.getClass()) {
       return false;
     }
 
-    TypeDefinition that = (TypeDefinition) o;
+    TypeDefinition that = (TypeDefinition) other;
 
     if (!tableName.equalsIgnoreCase(that.tableName)) {
       return false;

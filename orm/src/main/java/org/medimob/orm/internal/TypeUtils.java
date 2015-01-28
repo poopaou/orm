@@ -13,9 +13,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * Statement binding and cursor reading utility helper. Handles simple types and Date.
- *
- * Created by Poopaou on 21/01/2015.
+ * Statement binding and cursor reading utility helper. Handles simple types and Date. Created by
+ * Poopaou on 21/01/2015.
  */
 public final class TypeUtils {
 

@@ -15,17 +15,17 @@ import java.lang.annotation.Target;
 public @interface Unique {
 
   /**
-   * @return constraint name.
+   * Constraint name.
    */
   String name() default "";
 
   /**
-   * @return unique columns names (used only in @Table definition)
+   * Unique columns names (used only in @Table definition).
    */
   String[] columns();
 
   /**
-   * @return the on clonflict clause  (default ROLLBACK).
+   * The on clonflict clause  (default ROLLBACK).
    */
   Conflict onConflict() default Conflict.ROLLBACK;
 }

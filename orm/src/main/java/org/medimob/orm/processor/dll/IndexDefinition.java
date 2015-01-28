@@ -33,15 +33,15 @@ public final class IndexDefinition {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
+  public boolean equals(Object other) {
+    if (this == other) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (other == null || getClass() != other.getClass()) {
       return false;
     }
 
-    IndexDefinition that = (IndexDefinition) o;
+    IndexDefinition that = (IndexDefinition) other;
 
     if (!name.equalsIgnoreCase(that.name)) {
       return false;

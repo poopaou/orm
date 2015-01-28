@@ -276,7 +276,7 @@ public abstract class Model<T> {
     }
     if (insertStatement == null) {
       String version = versionColumn != null ? versionColumn : null;
-      final String sql = SqlUtils.createSqlInsert("INSERT INTO", tableName, insertColumns, version);
+      final String sql = SqlUtils.createSqlInsert(tableName, insertColumns, version);
       insertStatement = db.compileStatement(sql);
     }
     bindInsert(insertStatement, entity);

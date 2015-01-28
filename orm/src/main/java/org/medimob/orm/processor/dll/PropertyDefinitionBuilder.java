@@ -39,6 +39,13 @@ public class PropertyDefinitionBuilder {
     return this;
   }
 
+  /**
+   * add a new constraint to property.
+   *
+   * @param constraintDefinition constraint
+   * @return this.
+   * @throws MappingException if constraint is already defined.
+   */
   public PropertyDefinitionBuilder addConstraints(ConstraintDefinition constraintDefinition)
       throws MappingException {
     addOrThrowIfExist(constraintDefinitions, constraintDefinition,
@@ -56,6 +63,11 @@ public class PropertyDefinitionBuilder {
     return this;
   }
 
+  /**
+   * Build property definition.
+   * @return property definition.
+   * @throws MappingException if definition is not valid.
+   */
   public PropertyDefinition build() throws MappingException {
     validate();
     return new PropertyDefinition(columnName, fieldName, propertyType, dateFormat, getStatement(),

@@ -1,5 +1,8 @@
 package org.medimob.orm;
 
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+
 /**
  * Created by Poopaou on 20/01/2015.
  */
@@ -9,21 +12,34 @@ public final class SqlUtils {
   }
 
   /**
-   * Remember: SQLite does not support joins nor table alias for DELETE.
+   * Create sql delete.
+   * @param tableName table's name.
+   * @param selection selections columns.
+   * @return sql statement.
    */
-  public static String createSqlDelete(String tablename, String[] columns) {
+  @NonNull
+  public static String createSqlDelete(@NonNull String tableName, @Nullable String[] selection) {
     StringBuilder builder = new StringBuilder("DELETE FROM ");
-    builder.append(tablename);
-    if (columns != null && columns.length > 0) {
+    builder.append(tableName);
+    if (selection != null && selection.length > 0) {
       builder.append(" WHERE ");
-      appendColumnsEqValue(builder, tablename, columns);
+      appendColumnsEqValue(builder, tableName, selection);
     }
     return builder.toString();
   }
 
-  public static String createSqlInsert(String insertInto, String tableName, String[] columns,
-                                       String version) {
-    StringBuilder builder = new StringBuilder(insertInto);
+  /**
+   * Create sql insert.
+   *
+   * @param tableName table's name.
+   * @param columns   inserted columns.
+   * @param version   version columns.
+   * @return sql statement.
+   */
+  @NonNull
+  public static String createSqlInsert(@NonNull String tableName, @NonNull String[] columns,
+                                       @Nullable String version) {
+    StringBuilder builder = new StringBuilder("INSERT INTO ");
     builder.append(tableName).append(" (");
     appendColumns(builder, columns);
     if (version != null) {
@@ -39,10 +55,20 @@ public final class SqlUtils {
     return builder.toString();
   }
 
-  public static String createSqlUpdate(String tablename, String[] updateColumns, String id,
-                                       String version) {
+  /**
+   * Create sql update.
+   *
+   * @param tableName     table's name.
+   * @param updateColumns update columns.
+   * @param id            id column.
+   * @param version       version columns.
+   * @return sql statement.
+   */
+  @NonNull
+  public static String createSqlUpdate(@NonNull String tableName, @NonNull String[] updateColumns,
+                                       @NonNull String id, @Nullable String version) {
     StringBuilder builder = new StringBuilder("UPDATE ");
-    builder.append(tablename).append(" SET ");
+    builder.append(tableName).append(" SET ");
     appendColumnsEqualPlaceholders(builder, updateColumns);
     if (version != null) {
       builder.append(',');

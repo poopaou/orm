@@ -82,12 +82,25 @@ public class TypeDefinitionBuilder {
     return this;
   }
 
+  /**
+   * Add a new column to type.
+   *
+   * @param column type column
+   * @return this.
+   * @throws MappingException if column is already defined.
+   */
   public TypeDefinitionBuilder addColumn(PropertyDefinition column) throws MappingException {
     addOrThrowIfExist(columns, column, "Column " + column + " already exist in table");
     this.columns.add(column);
     return this;
   }
 
+  /**
+   * Add a new constraint to type.
+   * @param constraintDefinition constraint
+   * @return this.
+   * @throws MappingException if constraint is already defined.
+   */
   public TypeDefinitionBuilder addConstraint(ConstraintDefinition constraintDefinition)
       throws MappingException {
     addOrThrowIfExist(constraintDefinitions, constraintDefinition,
@@ -95,16 +108,33 @@ public class TypeDefinitionBuilder {
     return this;
   }
 
+  /**
+   * add a new trigger to type.
+   * @param trigger trigger
+   * @return this.
+   * @throws MappingException if trigger is already defined.
+   */
   public TypeDefinitionBuilder addTrigger(TriggerDefinition trigger) throws MappingException {
     addOrThrowIfExist(triggers, trigger, "Trigger " + trigger + " already exist in table");
     return this;
   }
 
+  /**
+   * add a new index to type.
+   * @param index index
+   * @return this.
+   * @throws MappingException if index is already defined.
+   */
   public TypeDefinitionBuilder addIndex(IndexDefinition index) throws MappingException {
     addOrThrowIfExist(indexes, index, "Index " + index + " already exist in table");
     return this;
   }
 
+  /**
+   * Build new type definition
+   * @return type definition.
+   * @throws MappingException if definition is not valid.
+   */
   public TypeDefinition build() throws MappingException {
     validate();
     return new TypeDefinition(tableName, typeSimpleName, typeQualifiedName, packageName,

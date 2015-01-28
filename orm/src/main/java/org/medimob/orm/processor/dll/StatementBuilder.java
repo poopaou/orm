@@ -1,5 +1,7 @@
 package org.medimob.orm.processor.dll;
 
+import android.support.annotation.NonNull;
+
 /**
  * Created by Poopaou on 17/01/2015.
  */
@@ -11,35 +13,65 @@ public class StatementBuilder {
     this.builder = new StringBuilder();
   }
 
-  public StatementBuilder appendWord(String word) {
+  /**
+   * Append a new sql word.
+   *
+   * @param word to append
+   * @return builder.
+   */
+  @NonNull
+  public StatementBuilder appendWord(@NonNull String word) {
     this.builder.append(' ')
         .append(word);
     return this;
   }
 
-  public StatementBuilder appendBetweenBracket(String exp) {
+  /**
+   * Append expression between brackets
+   *
+   * @param exp expression to append
+   * @return builder.
+   */
+  @NonNull
+  public StatementBuilder appendBetweenBracket(@NonNull String exp) {
     this.builder.append(" (")
         .append(exp)
         .append(") ");
     return this;
   }
 
+  /**
+   * Open bracket.
+   *
+   * @return builder.
+   */
+  @NonNull
   public StatementBuilder openBracket() {
     this.builder.append(" ( ");
     return this;
   }
 
-  public StatementBuilder appendWithSeparator(String[] strings, char separator) {
-    for (int i = 0; i < strings.length; i++) {
+  /**
+   * Open expression with separators between each expression.
+   *
+   * @return builder.
+   */
+  @NonNull
+  public StatementBuilder appendWithSeparator(@NonNull String[] expressions, char separator) {
+    for (int i = 0; i < expressions.length; i++) {
       if (i > 0) {
         builder.append(' ');
         builder.append(separator);
       }
-      builder.append(strings[i]);
+      builder.append(expressions[i]);
     }
     return this;
   }
 
+  /**
+   * Close bracket.
+   * @return builder.
+   */
   public StatementBuilder closeBracket() {
     this.builder.append(" )");
     return this;

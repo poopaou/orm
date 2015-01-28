@@ -8,8 +8,24 @@ import java.lang.annotation.Target;
 @Target(value = ElementType.FIELD)
 @Retention(value = RetentionPolicy.RUNTIME)
 public @interface Id {
-    String name() default "_id";
-    Sort sort() default Sort.ASC;
-    boolean autoIncrement() default true;
-    Conflict onConflict() default Conflict.ROLLBACK;
+
+  /**
+   * Id's column's name default is "_id".
+   */
+  String name() default "_id";
+
+  /**
+   * Id's sort (default = Sort.NONE).
+   */
+  Sort sort() default Sort.NONE;
+
+  /**
+   * Auto incremented id value (default = true).
+   */
+  boolean autoIncrement() default true;
+
+  /**
+   * On conflict clause (default = Conflict.ROLLBACK).
+   */
+  Conflict onConflict() default Conflict.ROLLBACK;
 }

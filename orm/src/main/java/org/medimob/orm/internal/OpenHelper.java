@@ -3,6 +3,7 @@ package org.medimob.orm.internal;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+
 import org.medimob.orm.Model;
 
 import java.util.Collection;
@@ -12,22 +13,22 @@ import java.util.Collection;
  */
 public class OpenHelper extends SQLiteOpenHelper {
 
-    private final Collection<Model<?>> models;
+  private final Collection<Model<?>> models;
 
-    public OpenHelper(Context context, String name, int version, Collection<Model<?>> models) {
-        super(context, name, null, version);
-        this.models = models;
-    }
+  public OpenHelper(Context context, String name, int version, Collection<Model<?>> models) {
+    super(context, name, null, version);
+    this.models = models;
+  }
 
-    @Override
-    public void onCreate(SQLiteDatabase db) {
-        for(Model<?> m :models){
-            m.onCreate(db);
-        }
+  @Override
+  public void onCreate(SQLiteDatabase db) {
+    for (Model<?> m : models) {
+      m.onCreate(db);
     }
+  }
 
-    @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // TODO.
-    }
+  @Override
+  public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    // TODO.
+  }
 }

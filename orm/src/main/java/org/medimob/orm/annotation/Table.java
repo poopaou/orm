@@ -9,9 +9,13 @@ import java.lang.annotation.Target;
 @Retention(value = RetentionPolicy.RUNTIME)
 public @interface Table {
 
-    boolean temp() default false;
-    Unique[] uniques();
-    Check[] checks();
-    Index[] indexes();
-    Trigger[] triggers();
+  boolean temp() default false;
+
+  Unique[] uniques();
+
+  Check[] checks();
+
+  Index[] indexes();
+
+  Trigger[] triggers();
 }

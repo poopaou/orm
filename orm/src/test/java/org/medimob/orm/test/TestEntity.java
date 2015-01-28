@@ -7,4 +7,5 @@ import org.medimob.orm.annotation.Entity;
  */
 @Entity
 public class TestEntity {
+
 }

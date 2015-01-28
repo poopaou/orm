@@ -34,12 +34,12 @@
         <repository>
             <id>bintray</id>
             <name>bintray-poopaou</name>
-            <url>https://api.bintray.com/maven/poopaou/maven</url>
+            <url>https://api.bintray.com/maven/poopaou/maven/org.medimob.orm</url>
         </repository>
         <snapshotRepository>
             <id>bintray-snapshot</id>
             <name>bintray-snapshot-poopaou</name>
-            <url>https://api.bintray.com/maven/poopaou/maven-snapshot</url>
+            <url>https://api.bintray.com/maven/poopaou/maven-snapshot/org.medimob.orm</url>
         </snapshotRepository>
     </distributionManagement>
 

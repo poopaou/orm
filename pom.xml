@@ -26,8 +26,8 @@
     <scm>
         <connection>scm:git:https://github.com/poopaou/orm.git</connection>
         <developerConnection>scm:git:git@github.com:poopaou/orm.git</developerConnection>
-        <url>https://github.com/poopaou/orm.git</url>
-        <tag>1.0-SNAPSHOT</tag>
+        <url>https://github.com/poopaou/orm</url>
+        <tag>HEAD</tag>
     </scm>
 
     <distributionManagement>

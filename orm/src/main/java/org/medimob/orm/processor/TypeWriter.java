@@ -1,13 +1,16 @@
 package org.medimob.orm.processor;
 
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 
 import com.squareup.javawriter.JavaWriter;
 
 import org.medimob.orm.Model;
 import org.medimob.orm.internal.TypeUtils;
+import org.medimob.orm.processor.dll.IndexDefinition;
 import org.medimob.orm.processor.dll.PropertyDefinition;
+import org.medimob.orm.processor.dll.TriggerDefinition;
 import org.medimob.orm.processor.dll.TypeDefinition;
 
 import java.io.IOException;
@@ -24,6 +27,7 @@ import static javax.lang.model.element.Modifier.PUBLIC;
 import static javax.lang.model.element.Modifier.STATIC;
 
 /**
+ * Generate Model class helper.
  * Created by Poopaou on 20/01/2015.
  */
 class TypeWriter {
@@ -70,9 +74,10 @@ class TypeWriter {
 
   public void writeType(TypeDefinition typeDefinition) throws IOException {
     final String typeSimpleName = typeDefinition.getTypeSimpleName();
+    final String generatedClassName = typeSimpleName + EntityProcessor.CLASS_MODEL_SUFFIX;
 
     JavaFileObject file =
-        filer.createSourceFile(typeSimpleName + EntityProcessor.CLASS_MODEL_SUFFIX);
+        filer.createSourceFile(generatedClassName);
     JavaWriter writer = new JavaWriter(file.openWriter());
 
     writer.emitSingleLineComment("AUTO GENERATED CLASS : DO NOT MODIFIED !!!");
@@ -84,6 +89,7 @@ class TypeWriter {
     // Imports
     writer.emitImports(
         Cursor.class,
+        SQLiteDatabase.class,
         SQLiteStatement.class
     );
     writer.emitEmptyLine();
@@ -117,8 +123,7 @@ class TypeWriter {
 
     // Type begin
     writer.emitEmptyLine();
-    writer.beginType(typeDefinition.getTypeSimpleName() + "$$Dao", "class",
-                     EnumSet.of(PUBLIC, FINAL),
+    writer.beginType(generatedClassName, "class", EnumSet.of(PUBLIC, FINAL),
                      "Model<" + typeSimpleName + ">");
 
     // Table name constant.
@@ -172,65 +177,71 @@ class TypeWriter {
       // END
     }
 
+    writer.emitEmptyLine();
+    writeOnCreateMethod(writer, typeDefinition);
+
     // BEGIN : "readEntity" method (mandatory).
     writer.emitEmptyLine();
-    readCursorForFields(writer, typeDefinition, queryCols);
+    writeReadEntityMethod(writer, typeDefinition, queryCols);
 
     // BEGIN : BindUpdate method (mandatory).
     writer.emitEmptyLine();
-    createBindMethod("bindUpdate", writer, typeDefinition, updateCols);
+    writeBindMethod("bindUpdate", writer, typeDefinition, updateCols);
 
     // BEGIN : bindInsert method (mandatory)
     writer.emitEmptyLine();
-    createBindMethod("bindInsert", writer, typeDefinition, insertCols);
+    writeBindMethod("bindInsert", writer, typeDefinition, insertCols);
 
     // Type end.
     writer.endType();
     writer.close();
   }
 
-   /* private String formatSqlStatement(TypeDefinition typeDefinition){
-        StringBuilder builder = new StringBuilder();
-        builder.append('"');
-        builder.append(typeDefinition.getStatement());
+  private void writeOnCreateMethod(JavaWriter writer, TypeDefinition typeDefinition)
+      throws IOException {
+    writer.beginMethod("void", "onCreate", EnumSet.of(PUBLIC, FINAL), "SQLiteDatabase", "db");
+    StringBuilder builder = new StringBuilder();
+    builder.append('"');
+    builder.append(typeDefinition.getStatement());
 
-        builder.append( "(\"\n"); // Open table bracket
+    builder.append("(\"\n"); // Open table bracket
 
-        // Not null id column
-        builder.append("+ \"");
-        builder.append(typeDefinition.getIdColumn().getStatement());
-        builder.append("\"\n");
+    // Not null id column
+    builder.append("+ \"");
+    builder.append(typeDefinition.getIdColumn().getStatement());
+    builder.append("\"\n");
 
-        // Others columns definitions
-        for (PropertyDefinition propertyDefinition : typeDefinition.getColumns()){
-            builder.append("+ \",");
-            builder.append(propertyDefinition.getStatement());
-            builder.append("\"\n");
-        }
-        //  Nullable version column
-        if (typeDefinition.getVersionColumn() != null){
-            builder.append("+ \",");
-            builder.append(typeDefinition.getVersionColumn().getStatement());
-            builder.append("\"\n");
-        }
-        builder.append("+ \"); \"\n"); // Table definition end
+    // Others columns definitions
+    for (PropertyDefinition propertyDefinition : typeDefinition.getColumns()) {
+      builder.append("+ \",");
+      builder.append(propertyDefinition.getStatement());
+      builder.append("\"\n");
+    }
+    //  Nullable version column
+    if (typeDefinition.getVersionColumn() != null) {
+      builder.append("+ \",");
+      builder.append(typeDefinition.getVersionColumn().getStatement());
+      builder.append("\"\n");
+    }
+    builder.append("+ \");\"\n"); // Table definition end
 
-        for (IndexDefinition index : typeDefinition.getIndexes()){
-            builder.append("+ \"");
-            builder.append(index.getStatement());
-            builder.append("; \"\n");
-        }
+    for (IndexDefinition index : typeDefinition.getIndexes()) {
+      builder.append("+ \" ");
+      builder.append(index.getStatement());
+      builder.append("; \"\n");
+    }
 
-        for (TriggerDefinition trigger : typeDefinition.getTriggers()){
-            builder.append("+ \"");
-            builder.append(trigger.getStatement());
-            builder.append("; \"\n");
-        }
-        return builder.toString();
-    }*/
+    for (TriggerDefinition trigger : typeDefinition.getTriggers()) {
+      builder.append("+ \"");
+      builder.append(trigger.getStatement());
+      builder.append("; \"\n");
+    }
+    writer.emitStatement("db.execSQL(%s)", builder.toString());
+    writer.endMethod();
+  }
 
-  private void readCursorForFields(JavaWriter writer, TypeDefinition definition,
-                                   List<String> queryCols) throws IOException {
+  private void writeReadEntityMethod(JavaWriter writer, TypeDefinition definition,
+                                     List<String> queryCols) throws IOException {
     writer.beginMethod(definition.getTypeSimpleName(), "readEntity", EnumSet.of(PUBLIC, FINAL),
                        "Cursor", "cursor");
     writer.emitStatement("final %s entity = new %s()", definition.getTypeSimpleName(),
@@ -310,8 +321,8 @@ class TypeWriter {
     // END
   }
 
-  private void createBindMethod(String methodName, JavaWriter writer, TypeDefinition typeDefinition,
-                                List<String> columnNames) throws IOException {
+  private void writeBindMethod(String methodName, JavaWriter writer, TypeDefinition typeDefinition,
+                               List<String> columnNames) throws IOException {
     writer.beginMethod("void", methodName, EnumSet.of(PUBLIC, FINAL), "SQLiteStatement",
                        "statement",
                        typeDefinition.getTypeSimpleName(), "entity");

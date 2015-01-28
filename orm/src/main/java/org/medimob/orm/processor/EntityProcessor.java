@@ -42,6 +42,8 @@ import static org.medimob.orm.processor.ProcessorUtils.resolveTableName;
 import static org.medimob.orm.processor.ProcessorUtils.resolveUniqueName;
 
 /**
+ * Entity annotation processor.
+ *
  * Created by Poopaou on 16/01/2015.
  */
 @SupportedAnnotationTypes("org.medimob.orm.annotation.Entity")
@@ -53,6 +55,7 @@ public class EntityProcessor extends AbstractProcessor {
   private Elements elementUtils;
   private PropertyProcessor propertyProcessor;
   private List<String> proceededTypeMap;
+  private TypeWriter typeWriter;
 
   @Override
   public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -61,6 +64,7 @@ public class EntityProcessor extends AbstractProcessor {
     this.elementUtils = processingEnv.getElementUtils();
     this.propertyProcessor = new PropertyProcessor(processingEnv);
     proceededTypeMap = new ArrayList<String>();
+    typeWriter = new TypeWriter(processingEnv.getFiler());
   }
 
   @Override
@@ -110,8 +114,13 @@ public class EntityProcessor extends AbstractProcessor {
 
         processTable(tableBuilder, tableName, element.getAnnotation(Table.class));
 
+        typeWriter.writeType(tableBuilder.build());
         proceededTypeMap.add(typeQualifiedName);
+
       } catch (MappingException e) {
+        processingEnv.getMessager()
+            .printMessage(Diagnostic.Kind.ERROR, e.getMessage(), element);
+      } catch (IOException e) {
         processingEnv.getMessager()
             .printMessage(Diagnostic.Kind.ERROR, e.getMessage(), element);
       }
@@ -128,7 +137,8 @@ public class EntityProcessor extends AbstractProcessor {
         }
         bufferedWriter.close();
       } catch (IOException e) {
-        e.printStackTrace();
+        processingEnv.getMessager()
+            .printMessage(Diagnostic.Kind.ERROR, e.getMessage());
       }
     }
     return true;

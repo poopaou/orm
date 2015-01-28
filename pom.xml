@@ -36,6 +36,11 @@
             <name>bintray-poopaou</name>
             <url>https://api.bintray.com/maven/poopaou/maven</url>
         </repository>
+        <snapshotRepository>
+            <id>bintray-snapshot</id>
+            <name>bintray-snapshot-poopaou</name>
+            <url>https://api.bintray.com/maven/poopaou/maven-snapshot</url>
+        </snapshotRepository>
     </distributionManagement>
 
 

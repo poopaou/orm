@@ -10,7 +10,7 @@
 
     <groupId>org.medimob</groupId>
     <artifactId>orm-parent</artifactId>
-    <version>1.0</version>
+    <version>1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>ORM Parent</name>

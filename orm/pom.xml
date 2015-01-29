@@ -24,7 +24,7 @@
 
         <dependency>
             <groupId>com.android.support</groupId>
-            <artifactId>support-annotation</artifactId>
+            <artifactId>support-annotations</artifactId>
             <scope>compile</scope>
         </dependency>
 

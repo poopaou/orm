@@ -101,7 +101,7 @@
 
             <dependency>
                 <groupId>com.android.support</groupId>
-                <artifactId>support-annotation</artifactId>
+                <artifactId>support-annotations</artifactId>
                 <version>21.0.0</version>
             </dependency>
 

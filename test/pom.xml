@@ -3,7 +3,7 @@
     <parent>
         <artifactId>orm-parent</artifactId>
         <groupId>org.medimob</groupId>
-        <version>1.4-SNAPSHOT</version>
+        <version>1.4</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,7 +15,7 @@
         <dependency>
             <groupId>org.medimob</groupId>
             <artifactId>orm</artifactId>
-            <version>1.0</version>
+            <version>1.4</version>
         </dependency>
 
         <dependency>

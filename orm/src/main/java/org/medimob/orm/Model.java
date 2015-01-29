@@ -84,7 +84,7 @@ public abstract class Model<T> {
   public T rawQuerySingle(@NonNull SQLiteDatabase db, @NonNull String selection,
                           @Nullable String[] selectionArg, @Nullable String having) {
     Cursor cursor =
-        db.query(tableName, queryColumns, selection, selectionArg, null, having, null, "1");
+        db.query(tableName, queryColumns, selection, selectionArg, null, having, null, "1" );
     try {
       if (cursor.moveToFirst()) {
         return readEntity(cursor);
@@ -272,7 +272,7 @@ public abstract class Model<T> {
 
   private long insertInsideSynchronized(SQLiteDatabase db, T entity) {
     if (getId(entity) > 0) {
-      throw new OrmException("Entity is not new");
+      throw new OrmException("Entity is not new" );
     }
     if (insertStatement == null) {
       String version = versionColumn != null ? versionColumn : null;

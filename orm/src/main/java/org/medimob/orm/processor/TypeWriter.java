@@ -1,9 +1,5 @@
 package org.medimob.orm.processor;
 
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteStatement;
-
 import com.squareup.javawriter.JavaWriter;
 
 import org.medimob.orm.Model;
@@ -88,9 +84,9 @@ class TypeWriter {
 
     // Imports
     writer.emitImports(
-        Cursor.class,
-        SQLiteDatabase.class,
-        SQLiteStatement.class
+        "android.database.Cursor",
+        "android.database.sqlite.SQLiteDatabase",
+        "android.database.sqlite.SQLiteStatement"
     );
     writer.emitEmptyLine();
     writer.emitImports(

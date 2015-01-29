@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>orm-parent</artifactId>
         <groupId>org.medimob</groupId>
@@ -22,10 +24,8 @@
 
         <dependency>
             <groupId>com.android.support</groupId>
-            <artifactId>support-v4</artifactId>
-            <version>21.0.0</version>
-            <type>aar</type>
-            <scope>provided</scope>
+            <artifactId>support-annotation</artifactId>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -83,7 +83,8 @@
                         </goals>
                         <configuration>
                             <annotationProcessors>
-                                <annotationProcessor>org.medimob.orm.processor.EntityProcessor
+                                <annotationProcessor>
+                                    org.medimob.orm.processor.EntityProcessor
                                 </annotationProcessor>
                             </annotationProcessors>
                         </configuration>

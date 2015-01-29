@@ -15,6 +15,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 import javax.annotation.processing.Filer;
+import javax.lang.model.element.TypeElement;
 import javax.tools.JavaFileObject;
 
 import static javax.lang.model.element.Modifier.FINAL;
@@ -68,13 +69,13 @@ class TypeWriter {
     builder.append('"').append(string).append('"');
   }
 
-  public void writeType(TypeDefinition typeDefinition) throws IOException {
+  public void writeType(TypeElement typeElement, TypeDefinition typeDefinition) throws IOException {
     final String typeSimpleName = typeDefinition.getTypeSimpleName();
     final String packageName = typeDefinition.getPackageName();
     final String generatedClassName = typeSimpleName + EntityProcessor.CLASS_MODEL_SUFFIX;
 
     JavaFileObject file =
-        filer.createSourceFile(packageName + "." + generatedClassName);
+        filer.createSourceFile(packageName + "." + generatedClassName, typeElement);
     JavaWriter writer = new JavaWriter(file.openWriter());
 
     writer.emitSingleLineComment("AUTO GENERATED CLASS : DO NOT MODIFIED !!!");

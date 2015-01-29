@@ -103,12 +103,12 @@ public class EntityProcessor extends AbstractProcessor {
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
     for (Element element : roundEnv.getElementsAnnotatedWith(Entity.class)) {
       try {
-        processingEnv.getMessager()
-            .printMessage(Diagnostic.Kind.NOTE, "Processing class", element);
-
         TypeElement typeElement = (TypeElement) element;
         // If the class as already be proceeded skip execution.
         final String typeQualifiedName = typeElement.getQualifiedName().toString();
+        if (proceededTypeMap.contains(typeQualifiedName)) {
+          continue;
+        }
 
         // Validate class Access :
         // - A least Package protected.
@@ -134,7 +134,7 @@ public class EntityProcessor extends AbstractProcessor {
 
         processTable(tableBuilder, tableName, element.getAnnotation(Table.class));
 
-        typeWriter.writeType(tableBuilder.build());
+        typeWriter.writeType(typeElement, tableBuilder.build());
         proceededTypeMap.add(typeQualifiedName);
 
       } catch (MappingException e) {

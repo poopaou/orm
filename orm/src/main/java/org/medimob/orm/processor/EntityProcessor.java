@@ -1,11 +1,15 @@
 package org.medimob.orm.processor;
 
 import org.medimob.orm.annotation.Check;
+import org.medimob.orm.annotation.Column;
 import org.medimob.orm.annotation.Entity;
+import org.medimob.orm.annotation.Id;
 import org.medimob.orm.annotation.Index;
+import org.medimob.orm.annotation.NotNull;
 import org.medimob.orm.annotation.Table;
 import org.medimob.orm.annotation.Trigger;
 import org.medimob.orm.annotation.Unique;
+import org.medimob.orm.annotation.Version;
 import org.medimob.orm.processor.dll.ConstraintDefinitionBuilder;
 import org.medimob.orm.processor.dll.Constraints;
 import org.medimob.orm.processor.dll.IndexDefinitionBuilder;
@@ -14,7 +18,9 @@ import org.medimob.orm.processor.dll.TypeDefinitionBuilder;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -22,7 +28,6 @@ import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
-import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -46,11 +51,23 @@ import static org.medimob.orm.processor.ProcessorUtils.resolveUniqueName;
  *
  * Created by Poopaou on 16/01/2015.
  */
-@SupportedAnnotationTypes("org.medimob.orm.annotation.Entity")
 public class EntityProcessor extends AbstractProcessor {
 
   public static final String CLASS_MODEL_SUFFIX = "$$Model";
   public static final String ENTITY_LIST_FILE_PATH = "META-INF/com.medimob.Entity";
+
+  @SuppressWarnings("unchecked" )
+  private static final List<Class<? extends Annotation>> SUPPORTED_ANNOTATION = Arrays.asList(
+      Check.class,
+      Column.class,
+      Id.class,
+      Index.class,
+      NotNull.class,
+      Table.class,
+      Trigger.class,
+      Unique.class,
+      Version.class
+  );
 
   private Elements elementUtils;
   private PropertyProcessor propertyProcessor;
@@ -69,9 +86,12 @@ public class EntityProcessor extends AbstractProcessor {
 
   @Override
   public Set<String> getSupportedAnnotationTypes() {
-    HashSet<String> set = new HashSet<String>();
-    set.add(Entity.class.getTypeName());
-    return set;
+    HashSet<String> supportTypes = new HashSet<String>();
+    supportTypes.add(Entity.class.getCanonicalName());
+    for (Class<? extends Annotation> c : SUPPORTED_ANNOTATION) {
+      supportTypes.add(c.getCanonicalName());
+    }
+    return supportTypes;
   }
 
   @Override

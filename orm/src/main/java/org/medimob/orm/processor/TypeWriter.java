@@ -70,10 +70,11 @@ class TypeWriter {
 
   public void writeType(TypeDefinition typeDefinition) throws IOException {
     final String typeSimpleName = typeDefinition.getTypeSimpleName();
+    final String packageName = typeDefinition.getPackageName();
     final String generatedClassName = typeSimpleName + EntityProcessor.CLASS_MODEL_SUFFIX;
 
     JavaFileObject file =
-        filer.createSourceFile(generatedClassName);
+        filer.createSourceFile(packageName + "." + generatedClassName);
     JavaWriter writer = new JavaWriter(file.openWriter());
 
     writer.emitSingleLineComment("AUTO GENERATED CLASS : DO NOT MODIFIED !!!");
@@ -174,26 +175,26 @@ class TypeWriter {
     }
 
     writer.emitEmptyLine();
-    writeOnCreateMethod(writer, typeDefinition);
+    emitOnCreateMethod(writer, typeDefinition);
 
     // BEGIN : "readEntity" method (mandatory).
     writer.emitEmptyLine();
-    writeReadEntityMethod(writer, typeDefinition, queryCols);
+    emitReadEntityMethod(writer, typeDefinition, queryCols);
 
     // BEGIN : BindUpdate method (mandatory).
     writer.emitEmptyLine();
-    writeBindMethod("bindUpdate", writer, typeDefinition, updateCols);
+    emitBindMethod("bindUpdate", writer, typeDefinition, updateCols);
 
     // BEGIN : bindInsert method (mandatory)
     writer.emitEmptyLine();
-    writeBindMethod("bindInsert", writer, typeDefinition, insertCols);
+    emitBindMethod("bindInsert", writer, typeDefinition, insertCols);
 
     // Type end.
     writer.endType();
     writer.close();
   }
 
-  private void writeOnCreateMethod(JavaWriter writer, TypeDefinition typeDefinition)
+  private void emitOnCreateMethod(JavaWriter writer, TypeDefinition typeDefinition)
       throws IOException {
     writer.beginMethod("void", "onCreate", EnumSet.of(PUBLIC, FINAL), "SQLiteDatabase", "db");
     StringBuilder builder = new StringBuilder();
@@ -236,8 +237,8 @@ class TypeWriter {
     writer.endMethod();
   }
 
-  private void writeReadEntityMethod(JavaWriter writer, TypeDefinition definition,
-                                     List<String> queryCols) throws IOException {
+  private void emitReadEntityMethod(JavaWriter writer, TypeDefinition definition,
+                                    List<String> queryCols) throws IOException {
     writer.beginMethod(definition.getTypeSimpleName(), "readEntity", EnumSet.of(PUBLIC, FINAL),
                        "Cursor", "cursor");
     writer.emitStatement("final %s entity = new %s()", definition.getTypeSimpleName(),
@@ -317,8 +318,8 @@ class TypeWriter {
     // END
   }
 
-  private void writeBindMethod(String methodName, JavaWriter writer, TypeDefinition typeDefinition,
-                               List<String> columnNames) throws IOException {
+  private void emitBindMethod(String methodName, JavaWriter writer, TypeDefinition typeDefinition,
+                              List<String> columnNames) throws IOException {
     writer.beginMethod("void", methodName, EnumSet.of(PUBLIC, FINAL), "SQLiteStatement",
                        "statement",
                        typeDefinition.getTypeSimpleName(), "entity");

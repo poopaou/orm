@@ -1,17 +1,16 @@
-package org.medimob.orm.internal;
+package org.medimob.orm;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import org.medimob.orm.Model;
-
 import java.util.Collection;
 
 /**
+ * Bd open helper.
  * Created by Poopaou on 26/01/2015.
  */
-public class OpenHelper extends SQLiteOpenHelper {
+class OpenHelper extends SQLiteOpenHelper {
 
   private final Collection<Model<?>> models;
 

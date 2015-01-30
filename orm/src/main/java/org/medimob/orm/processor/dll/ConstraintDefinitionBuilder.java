@@ -5,6 +5,7 @@ import org.medimob.orm.annotation.Sort;
 import org.medimob.orm.processor.MappingException;
 
 /**
+ * Column or table constraint definition.
  * Created by Poopaou on 21/01/2015.
  */
 public class ConstraintDefinitionBuilder {
@@ -108,10 +109,14 @@ public class ConstraintDefinitionBuilder {
 
   private String getStatement() {
     StatementBuilder builder = new StatementBuilder();
-    builder.appendWord("CONSTRAINT");
+    if (!columnConstraint) {
+      builder.appendWord("CONSTRAINT");
+    }
     switch (type) {
       case CHECK:
-        builder.appendWord("CHK_" + name.toUpperCase());
+        if (!columnConstraint) {
+          builder.appendWord("CHK_" + name.toUpperCase());
+        }
         builder.appendWord(type.getSql());
         builder.appendBetweenBracket(exp);
         break;
@@ -127,7 +132,9 @@ public class ConstraintDefinitionBuilder {
         }
         break;
       case PRIMARY_KEY:
-        builder.appendWord("PK_" + name.toUpperCase());
+        if (!columnConstraint) {
+          builder.appendWord("PK_" + name.toUpperCase());
+        }
         builder.appendWord(type.getSql());
         if (columnConstraint) {
           if (sort != null) {
@@ -144,7 +151,9 @@ public class ConstraintDefinitionBuilder {
         }
         break;
       case FOREIGN_KEY:
-        builder.appendWord("FK_" + name.toUpperCase());
+        if (!columnConstraint) {
+          builder.appendWord("FK_" + name.toUpperCase());
+        }
         builder.appendWord(type.getSql());
         builder.openBracket();
         builder.appendWithSeparator(columnNames, ',');
@@ -152,17 +161,23 @@ public class ConstraintDefinitionBuilder {
         // FIXME...
         break;
       case DEFAULT:
-        builder.appendWord("DEF_" + name.toUpperCase());
+        if (!columnConstraint) {
+          builder.appendWord("DEF_" + name.toUpperCase());
+        }
         builder.appendWord(type.getSql());
         builder.appendWord(exp);
         break;
       case COLLATE:
-        builder.appendWord("COL_" + name.toUpperCase());
+        if (!columnConstraint) {
+          builder.appendWord("COL_" + name.toUpperCase());
+        }
         builder.appendWord(type.getSql());
         builder.appendWord(exp);
         break;
       case NOT_NULL:
-        builder.appendWord("NNL_" + name.toUpperCase());
+        if (!columnConstraint) {
+          builder.appendWord("NNL_" + name.toUpperCase());
+        }
         builder.appendWord(type.getSql());
         break;
       default:

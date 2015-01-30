@@ -1,8 +1,16 @@
 package org.medimob.orm.processor;
 
-import com.squareup.javawriter.JavaWriter;
+import com.squareup.javapoet.ArrayTypeName;
+import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.FieldSpec;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
 
 import org.medimob.orm.Model;
+import org.medimob.orm.internal.SqlUtils;
 import org.medimob.orm.internal.TypeUtils;
 import org.medimob.orm.processor.dll.IndexDefinition;
 import org.medimob.orm.processor.dll.PropertyDefinition;
@@ -11,15 +19,14 @@ import org.medimob.orm.processor.dll.TypeDefinition;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 
 import javax.annotation.processing.Filer;
 import javax.lang.model.element.TypeElement;
-import javax.tools.JavaFileObject;
 
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
+import static javax.lang.model.element.Modifier.PROTECTED;
 import static javax.lang.model.element.Modifier.PUBLIC;
 import static javax.lang.model.element.Modifier.STATIC;
 
@@ -32,9 +39,16 @@ class TypeWriter {
   private static final String ID_COLUMN_FIELD = "ID_COLUMN";
   private static final String VERSION_COLUMN_FIELD = "VERSION_COLUMN";
   private static final String QUERY_COLUMNS_FIELD = "QUERY_COLUMNS";
-  private static final String INSERT_COLUMNS_FIELD = "INSERT_COLUMNS";
-  private static final String UPDATE_COLUMNS_FIELD = "UPDATE_COLUMNS";
-  private static final String UTIL_CLASS_NAME = TypeUtils.class.getName();
+  //private static final String INSERT_COLUMNS_FIELD = "INSERT_COLUMNS";
+  //private static final String UPDATE_COLUMNS_FIELD = "UPDATE_COLUMNS";
+
+  public static final String[] CONSTRUCTOR_ARGS = new String[]{
+      TABLE_NAME_FIELD,
+      ID_COLUMN_FIELD, VERSION_COLUMN_FIELD,
+      QUERY_COLUMNS_FIELD,
+      //INSERT_COLUMNS_FIELD,
+      //UPDATE_COLUMNS_FIELD
+  };
 
   private final Filer filer;
 
@@ -42,30 +56,39 @@ class TypeWriter {
     this.filer = filer;
   }
 
-  private static String formatStringArray(List<String> columns) {
+  private static String createSqlInsert(TypeDefinition def, List<String> insertCols) {
+    PropertyDefinition versionProp = def.getVersionColumn();
+    return SqlUtils.createSqlInsert(def.getTableName(),
+                                    insertCols.toArray(new String[insertCols.size()]),
+                                    versionProp != null ? versionProp.getColumnName() : null);
+  }
+
+  private static String createSqlUpdate(TypeDefinition def, List<String> updateColumns) {
+    PropertyDefinition versionProp = def.getVersionColumn();
+    return SqlUtils.createSqlUpdate(def.getTableName(),
+                                    updateColumns.toArray(new String[updateColumns.size()]),
+                                    def.getIdColumn().getColumnName(),
+                                    versionProp != null ? versionProp.getColumnName() : null);
+  }
+
+  private static String createSqlDelete(TypeDefinition def) {
+    PropertyDefinition versionProp = def.getVersionColumn();
+    return SqlUtils.createSqlDelete(def.getTableName(), def.getIdColumn().getColumnName(),
+                                    versionProp != null ? versionProp.getColumnName() : null);
+  }
+
+  private static String formatStringArray(int size) {
     StringBuilder builder = new StringBuilder();
-    builder.append("new String[]{\n");
-    boolean first = true;
-    for (String col : columns) {
-      if (first) {
-        first = false;
-      } else {
+    builder.append("new String[]{");
+    for (int i = 0; i < size; i++) {
+      if (i > 0) {
         builder.append(", ");
       }
-      builder.append(quoteString(col));
+      builder.append("$S");
     }
-    builder.append("\n}");
+    builder.append(" }");
     return builder.toString();
-  }
 
-  private static String quoteString(String string) {
-    StringBuilder builder = new StringBuilder(string.length());
-    quoteString(builder, string);
-    return builder.toString();
-  }
-
-  private static void quoteString(StringBuilder builder, String string) {
-    builder.append('"').append(string).append('"');
   }
 
   public void writeType(TypeElement typeElement, TypeDefinition typeDefinition) throws IOException {
@@ -73,28 +96,8 @@ class TypeWriter {
     final String packageName = typeDefinition.getPackageName();
     final String generatedClassName = typeSimpleName + EntityProcessor.CLASS_MODEL_SUFFIX;
 
-    JavaFileObject file =
-        filer.createSourceFile(packageName + "." + generatedClassName, typeElement);
-    JavaWriter writer = new JavaWriter(file.openWriter());
-
-    writer.emitSingleLineComment("AUTO GENERATED CLASS : DO NOT MODIFIED !!!");
-    writer.emitPackage(typeDefinition.getPackageName());
-
     final PropertyDefinition idField = typeDefinition.getIdColumn();
     final PropertyDefinition versionField = typeDefinition.getVersionColumn();
-
-    // Imports
-    writer.emitImports(
-        "android.database.Cursor",
-        "android.database.sqlite.SQLiteDatabase",
-        "android.database.sqlite.SQLiteStatement"
-    );
-    writer.emitEmptyLine();
-    writer.emitImports(
-        typeDefinition.getTypeQualifiedName(),
-        Model.class.getCanonicalName(),
-        TypeUtils.class.getCanonicalName()
-    );
 
     // Store columns order in list to preserve order
     // between declaration initialization and bindings
@@ -104,7 +107,7 @@ class TypeWriter {
 
     queryCols.add(idField.getColumnName());
     String columnName;
-    for (PropertyDefinition columnDef : typeDefinition.getColumns()) {
+    for (PropertyDefinition columnDef : typeDefinition.getProperties()) {
       columnName = columnDef.getColumnName();
       queryCols.add(columnName);
       if (columnDef.isInsertable()) {
@@ -118,138 +121,190 @@ class TypeWriter {
       queryCols.add(versionField.getColumnName());
     }
 
-    // Type begin
-    writer.emitEmptyLine();
-    writer.beginType(generatedClassName, "class", EnumSet.of(PUBLIC, FINAL),
-                     "Model<" + typeSimpleName + ">");
+    // Model Type.
+    TypeSpec.Builder classBuilder = TypeSpec.classBuilder(generatedClassName)
+        .addJavadoc("AUTO GENERATED CLASS : DO NOT MODIFIED !!!")
+        .addModifiers(PUBLIC, FINAL)
+        .superclass(ParameterizedTypeName
+                        .get(ClassName.get(Model.class), ClassName.get(typeElement)));
 
-    // Table name constant.
-    writer.emitEmptyLine();
-    writer.emitField("String", TABLE_NAME_FIELD, EnumSet.of(PRIVATE, STATIC, FINAL),
-                     quoteString(typeDefinition.getTableName()));
+    // Field : 'TABLE_NAME'
+    FieldSpec field = FieldSpec.builder(ClassName.get(String.class), TABLE_NAME_FIELD)
+        .addModifiers(PRIVATE, STATIC, FINAL)
+        .initializer("$S", typeDefinition.getTableName())
+        .build();
+    classBuilder.addField(field);
 
-    writer.emitEmptyLine();
-    writer.emitField("String", ID_COLUMN_FIELD, EnumSet.of(PRIVATE, STATIC, FINAL),
-                     quoteString(idField.getColumnName()));
+    // Field : 'ID_COLUMN'
+    field = FieldSpec.builder(ClassName.get(String.class), ID_COLUMN_FIELD)
+        .addModifiers(PRIVATE, STATIC, FINAL)
+        .initializer("$S", idField.getColumnName())
+        .build();
+    classBuilder.addField(field);
 
-    writer.emitEmptyLine();
-    writer.emitField("String", VERSION_COLUMN_FIELD, EnumSet.of(PRIVATE, STATIC, FINAL),
-                     versionField != null ? quoteString(versionField.getColumnName()) : "null");
-
-    writer.emitEmptyLine();
-    writer.emitField("String[]", QUERY_COLUMNS_FIELD, EnumSet.of(PRIVATE, STATIC, FINAL),
-                     formatStringArray(queryCols));
-    writer.emitEmptyLine();
-    writer.emitField("String[]", INSERT_COLUMNS_FIELD, EnumSet.of(PRIVATE, STATIC, FINAL),
-                     formatStringArray(insertCols));
-    writer.emitEmptyLine();
-    writer.emitField("String[]", UPDATE_COLUMNS_FIELD, EnumSet.of(PRIVATE, STATIC, FINAL),
-                     formatStringArray(updateCols));
-
-    // BEGIN : constructor :
-    // No arg constructor parent fields are
-    // initialized with class static fields.
-    writer.emitEmptyLine();
-    writer.beginConstructor(EnumSet.of(PUBLIC));
-    writer.emitStatement("super(%s, %s, %s, %s, %s, %s)", TABLE_NAME_FIELD, ID_COLUMN_FIELD,
-                         VERSION_COLUMN_FIELD,
-                         QUERY_COLUMNS_FIELD, INSERT_COLUMNS_FIELD, UPDATE_COLUMNS_FIELD);
-    writer.endConstructor(); // END
-
-    // BEGIN : "getId" method (mandatory).
-    writer.emitEmptyLine();
-    writer.beginMethod("long", "getId", EnumSet.of(PUBLIC, FINAL), typeSimpleName, "entity");
-    writer.emitStatement("return entity.%s", idField.getFieldName());
-    writer.endMethod();
-    // END
-
+    // Field : 'VERSION_COLUMN'
     if (versionField != null) {
-      // BEGIN : "getVersion" method :
-      // Override return value if version
-      // field is present.
-      writer.emitEmptyLine();
-      writer.beginMethod("long", "getVersion", EnumSet.of(PUBLIC, FINAL), typeSimpleName, "entity");
-      writer.emitStatement("return entity.%s", versionField.getFieldName());
-      writer.endMethod();
-      // END
+      field = FieldSpec.builder(ClassName.get(String.class), VERSION_COLUMN_FIELD)
+          .addModifiers(PRIVATE, STATIC, FINAL)
+          .initializer("$S", versionField.getColumnName())
+          .build();
+      classBuilder.addField(field);
+    } else {
+      field = FieldSpec.builder(ClassName.get(String.class), VERSION_COLUMN_FIELD)
+          .addModifiers(PRIVATE, STATIC, FINAL)
+          .initializer("$L", "null")
+          .build();
+      classBuilder.addField(field);
     }
 
-    writer.emitEmptyLine();
-    emitOnCreateMethod(writer, typeDefinition);
+    // Field : 'QUERY_COLUMNS'
+    field = FieldSpec.builder(ArrayTypeName.of(String.class), QUERY_COLUMNS_FIELD)
+        .addModifiers(PRIVATE, STATIC, FINAL)
+        .initializer(formatStringArray(queryCols.size()), queryCols.toArray())
+        .build();
+    classBuilder.addField(field);
 
-    // BEGIN : "readEntity" method (mandatory).
-    writer.emitEmptyLine();
-    emitReadEntityMethod(writer, typeDefinition, queryCols);
+    // Constructor
+    MethodSpec method = MethodSpec.constructorBuilder()
+        .addModifiers(PUBLIC)
+        .addStatement("super($L, $L, $L, $L)", CONSTRUCTOR_ARGS)
+        .build();
+    classBuilder.addMethod(method);
 
-    // BEGIN : BindUpdate method (mandatory).
-    writer.emitEmptyLine();
-    emitBindMethod("bindUpdate", writer, typeDefinition, updateCols);
+    // Method : 'getId'
+    method = MethodSpec.methodBuilder("getId")
+        .addModifiers(PROTECTED)
+        .addAnnotation(Override.class)
+        .returns(TypeName.LONG)
+        .addParameter(ClassName.get(typeElement), "entity")
+        .addStatement("return entity.$L", idField.getFieldName())
+        .build();
+    classBuilder.addMethod(method);
 
-    // BEGIN : bindInsert method (mandatory)
-    writer.emitEmptyLine();
-    emitBindMethod("bindInsert", writer, typeDefinition, insertCols);
+    if (versionField != null) {
+      // Method : 'getVersion'
+      method = MethodSpec.methodBuilder("getVersion")
+          .addModifiers(PROTECTED)
+          .addAnnotation(Override.class)
+          .returns(TypeName.LONG)
+          .addParameter(ClassName.get(typeElement), "entity")
+          .addStatement("return entity.$L", idField.getFieldName())
+          .build();
+      classBuilder.addMethod(method);
+    }
 
-    // Type end.
-    writer.endType();
-    writer.close();
+    // Method : 'onCreate'
+    method = MethodSpec.methodBuilder("onCreate")
+        .addModifiers(PROTECTED)
+        .addAnnotation(Override.class)
+        .returns(TypeName.VOID)
+        .addParameter(ClassName.get("android.database.sqlite", "SQLiteDatabase"), "db")
+        .addStatement("db.execSQL($S)", buildSqlStatement(typeDefinition))
+        .build();
+    classBuilder.addMethod(method);
+
+    // Method : 'newInstance'
+    method = MethodSpec.methodBuilder("newInstance")
+        .addModifiers(PROTECTED)
+        .addAnnotation(Override.class)
+        .returns(ClassName.get(typeElement))
+        .addStatement("return new $T()", ClassName.get(typeElement))
+        .build();
+    classBuilder.addMethod(method);
+
+    // Method : 'readEntity'
+    method = buildReadCursorMethod(typeElement, typeDefinition, queryCols);
+    classBuilder.addMethod(method);
+
+    method = MethodSpec.methodBuilder("getInsertStatement")
+        .addModifiers(PROTECTED)
+        .addAnnotation(Override.class)
+        .returns(ClassName.get(String.class))
+        .addStatement("return $S", createSqlInsert(typeDefinition, insertCols))
+        .build();
+    classBuilder.addMethod(method);
+    classBuilder.addMethod(bindInsertMethod(typeElement, typeDefinition, insertCols));
+
+    method = MethodSpec.methodBuilder("getUpdateStatement")
+        .addModifiers(PROTECTED)
+        .addAnnotation(Override.class)
+        .returns(ClassName.get(String.class))
+        .addStatement("return $S", createSqlUpdate(typeDefinition, updateCols))
+        .build();
+    classBuilder.addMethod(method);
+    classBuilder.addMethod(bindUpdateMethod(typeElement, typeDefinition, updateCols));
+
+    method = MethodSpec.methodBuilder("getDeleteStatement")
+        .addModifiers(PROTECTED)
+        .addAnnotation(Override.class)
+        .returns(ClassName.get(String.class))
+        .addStatement("return $S", createSqlDelete(typeDefinition))
+        .build();
+    classBuilder.addMethod(method);
+    classBuilder.addMethod(bindDeleteMethod(typeElement, typeDefinition));
+
+    // write java file.
+    JavaFile.builder(packageName, classBuilder.build())
+        .build()
+        .writeTo(filer);
   }
 
-  private void emitOnCreateMethod(JavaWriter writer, TypeDefinition typeDefinition)
+  private String buildSqlStatement(TypeDefinition typeDefinition)
       throws IOException {
-    writer.beginMethod("void", "onCreate", EnumSet.of(PUBLIC, FINAL), "SQLiteDatabase", "db");
-    StringBuilder builder = new StringBuilder();
-    builder.append('"');
-    builder.append(typeDefinition.getStatement());
 
-    builder.append("(\"\n"); // Open table bracket
+    StringBuilder builder = new StringBuilder();
+    builder.append(typeDefinition.getStatement());
+    builder.append("( "); // Open table bracket
 
     // Not null id column
-    builder.append("+ \"");
     builder.append(typeDefinition.getIdColumn().getStatement());
-    builder.append("\"\n");
-
     // Others columns definitions
-    for (PropertyDefinition propertyDefinition : typeDefinition.getColumns()) {
-      builder.append("+ \",");
+    for (PropertyDefinition propertyDefinition : typeDefinition.getProperties()) {
+      builder.append(", ");
       builder.append(propertyDefinition.getStatement());
-      builder.append("\"\n");
     }
     //  Nullable version column
     if (typeDefinition.getVersionColumn() != null) {
-      builder.append("+ \",");
+      builder.append(", ");
       builder.append(typeDefinition.getVersionColumn().getStatement());
-      builder.append("\"\n");
     }
-    builder.append("+ \");\"\n"); // Table definition end
+    builder.append(");"); // Table definition end
 
     for (IndexDefinition index : typeDefinition.getIndexes()) {
-      builder.append("+ \" ");
+      builder.append(' ');
       builder.append(index.getStatement());
-      builder.append("; \"\n");
+      builder.append(";");
     }
-
     for (TriggerDefinition trigger : typeDefinition.getTriggers()) {
-      builder.append("+ \"");
+      builder.append(' ');
       builder.append(trigger.getStatement());
-      builder.append("; \"\n");
+      builder.append(";");
     }
-    writer.emitStatement("db.execSQL(%s)", builder.toString());
-    writer.endMethod();
+    return builder.toString();
   }
 
-  private void emitReadEntityMethod(JavaWriter writer, TypeDefinition definition,
-                                    List<String> queryCols) throws IOException {
-    writer.beginMethod(definition.getTypeSimpleName(), "readEntity", EnumSet.of(PUBLIC, FINAL),
-                       "Cursor", "cursor");
-    writer.emitStatement("final %s entity = new %s()", definition.getTypeSimpleName(),
-                         definition.getTypeSimpleName());
+  private MethodSpec buildReadCursorMethod(TypeElement typeElement, TypeDefinition definition,
+                                           List<String> queryCols) throws IOException {
 
-    // Handle id column
     PropertyDefinition idColumn = definition.getIdColumn();
-    writer.emitStatement("entity.%s = TypeUtils.getLong(cursor, %s)", idColumn.getFieldName(),
-                         queryCols.indexOf(idColumn.getColumnName()));
+    ClassName entityType = ClassName.get(typeElement);
+    ClassName typeUtilType = ClassName.get(TypeUtils.class);
 
-    for (PropertyDefinition propertyDefinition : definition.getColumns()) {
+    MethodSpec.Builder builder = MethodSpec.methodBuilder("readCursor")
+        .addModifiers(PROTECTED)
+        .addAnnotation(Override.class)
+        .addParameter(entityType, "entity")
+        .addParameter(ClassName.get("android.database", "Cursor"), "cursor")
+        .addStatement("entity.$L = $T.getLong(cursor, $L)", idColumn.getFieldName(), typeUtilType,
+                      queryCols.indexOf(idColumn.getColumnName()));
+
+    PropertyDefinition version = definition.getVersionColumn();
+    if (version != null) {
+      builder.addStatement("entity.$L = $T.getLong(cursor, $L)", version.getFieldName(),
+                           typeUtilType, queryCols.indexOf(version.getColumnName()));
+    }
+
+    for (PropertyDefinition propertyDefinition : definition.getProperties()) {
       String columnName = propertyDefinition.getColumnName();
       int index = queryCols.indexOf(columnName);
       if (index == -1) {
@@ -258,80 +313,114 @@ class TypeWriter {
       String field = propertyDefinition.getFieldName();
       switch (propertyDefinition.getPropertyType()) {
         case BOOLEAN:
-          writer.emitStatement("entity.%s = %s.getBoolean(cursor, %s)", field, UTIL_CLASS_NAME,
-                               index);
+          builder.addStatement("entity.$L = $T.getBoolean(cursor, $L)", field, typeUtilType, index);
           break;
         case BYTE:
-          writer.emitStatement("entity.%s = %s.getByte(cursor, %s)", field, UTIL_CLASS_NAME, index);
+          builder.addStatement("entity.$L = $T.getByte(cursor, $L)", field, typeUtilType, index);
           break;
         case BYTE_ARRAY:
-          writer.emitStatement("entity.%s = %s.getByteArray(cursor, %s)", field, UTIL_CLASS_NAME,
+          builder.addStatement("entity.$L = $T.getByteArray(cursor, $L)", field, typeUtilType,
                                index);
           break;
         case CHARACTER:
-          writer.emitStatement("entity.%s = %s.getChar(cursor, %s)", field, UTIL_CLASS_NAME, index);
+          builder.addStatement("entity.$L = $T.getChar(cursor, $L)", field, typeUtilType, index);
           break;
         case DATE_LONG:
-          writer.emitStatement("entity.%s = %s.getDate(cursor, %s)", field, UTIL_CLASS_NAME, index);
+          builder.addStatement("entity.$L = $T.getDate(cursor, $L)", field, typeUtilType, index);
           break;
         case DATE_STRING:
-          writer.emitStatement("entity.%s = %s.getDate(cursor, %s, %s)", field, UTIL_CLASS_NAME,
-                               index, quoteString(propertyDefinition.getDateFormat()));
+          builder.addStatement("entity.$L = $T.getDate(cursor, $L, $S)", field, typeUtilType,
+                               index, propertyDefinition.getDateFormat());
           break;
         case DOUBLE:
-          writer.emitStatement("entity.%s = %s.getDouble(cursor, %s)", field, UTIL_CLASS_NAME,
+          builder.addStatement("entity.$L = $T.getDouble(cursor, $L)", field, typeUtilType,
                                index);
           break;
         case FLOAT:
-          writer.emitStatement("entity.%s = %s.getFloat(cursor, %s)", field, UTIL_CLASS_NAME,
+          builder.addStatement("entity.$L = $T.getFloat(cursor, $L)", field, typeUtilType,
                                index);
           break;
         case INTEGER:
-          writer.emitStatement("entity.%s = %s.getInt(cursor, %s)", field, UTIL_CLASS_NAME, index);
+          builder.addStatement("entity.$L = $T.getInt(cursor, $L)", field, typeUtilType, index);
           break;
         case LONG:
-          writer.emitStatement("entity.%s = %s.getLong(cursor, %s)", field, UTIL_CLASS_NAME, index);
+          builder.addStatement("entity.$L = $T.getLong(cursor, $L)", field, typeUtilType, index);
           break;
         case SHORT:
-          writer.emitStatement("entity.%s = %s.getShort(cursor, %s)", field, UTIL_CLASS_NAME,
+          builder.addStatement("entity.$L = $T.getShort(cursor, $L)", field, typeUtilType,
                                index);
           break;
         case STRING:
-          writer.emitStatement("entity.%s = %s.getString(cursor, %s)", field, UTIL_CLASS_NAME,
+          builder.addStatement("entity.$L = $T.getString(cursor, $L)", field, typeUtilType,
                                index);
           break;
         default:
           throw new IllegalStateException("Illegal type " + propertyDefinition.getPropertyType());
       }
     }
-
-    // Handle version column
-    PropertyDefinition version = definition.getVersionColumn();
-    if (version != null) {
-      writer.emitStatement("entity.%s = %s.getLong(cursor, %s)", idColumn.getFieldName(),
-                           UTIL_CLASS_NAME,
-                           queryCols.indexOf(idColumn.getColumnName()));
-    }
-
-    writer.emitStatement("return entity");
-    writer.endMethod();
-    // END
+    return builder.build();
   }
 
-  private void emitBindMethod(String methodName, JavaWriter writer, TypeDefinition typeDefinition,
-                              List<String> columnNames) throws IOException {
-    writer.beginMethod("void", methodName, EnumSet.of(PUBLIC, FINAL), "SQLiteStatement",
-                       "statement",
-                       typeDefinition.getTypeSimpleName(), "entity");
+  private MethodSpec bindInsertMethod(TypeElement element, TypeDefinition definition,
+                                      List<String> columns) throws IOException {
+    return createBindMethod("bindInsert", element, definition, columns).build();
+  }
 
-    for (PropertyDefinition definition : typeDefinition.getColumns()) {
-      int index = columnNames.indexOf(definition.getColumnName()) + 1;
-      if (index < 0) {
-        continue;
-      }
-      writer.emitStatement("%s.bind(statement, entity.%s, %s)", UTIL_CLASS_NAME,
-                           definition.getFieldName(), index);
+  private MethodSpec bindUpdateMethod(TypeElement typeElement, TypeDefinition definition,
+                                      List<String> columnNames) throws IOException {
+
+    ClassName typeUtilType = ClassName.get(TypeUtils.class);
+    MethodSpec.Builder builder =
+        createBindMethod("bindUpdate", typeElement, definition, columnNames);
+    // Bind id argument.
+    builder.addStatement("$T.bind(statement, entity.$L, $L)", typeUtilType,
+                         definition.getIdColumn().getFieldName(), columnNames.size());
+    // Bind Version argument if not null.
+    if (definition.getVersionColumn() != null) {
+      builder.addStatement("$T.bind(statement, entity.$L, $L)", typeUtilType,
+                           definition.getVersionColumn().getFieldName(), columnNames.size());
     }
-    writer.endMethod(); // END
+    return builder.build();
+  }
+
+  private MethodSpec bindDeleteMethod(TypeElement element, TypeDefinition definition)
+      throws IOException {
+
+    ClassName typeUtilType = ClassName.get(TypeUtils.class);
+    MethodSpec.Builder builder =
+        createBindMethod("bindDelete", element, definition, null);
+    // Bind id argument.
+    builder.addStatement("$T.bind(statement, entity.$L, 0)", typeUtilType,
+                         definition.getIdColumn().getFieldName());
+    if (definition.getVersionColumn() != null) {
+      builder.addStatement("$T.bind(statement, entity.$L, 1)", typeUtilType,
+                           definition.getVersionColumn().getFieldName());
+    }
+    return builder.build();
+  }
+
+  private MethodSpec.Builder createBindMethod(String methodName, TypeElement element,
+                                              TypeDefinition definition,
+                                              List<String> columnNames) throws IOException {
+
+    MethodSpec.Builder builder = MethodSpec.methodBuilder(methodName)
+        .addModifiers(PROTECTED)
+        .addAnnotation(Override.class)
+        .returns(TypeName.VOID)
+        .addParameter(ClassName.get("android.database.sqlite", "SQLiteStatement"), "statement")
+        .addParameter(ClassName.get(element), "entity");
+
+    ClassName typeUtilType = ClassName.get(TypeUtils.class);
+    if (columnNames != null) {
+      for (PropertyDefinition property : definition.getProperties()) {
+        int index = columnNames.indexOf(property.getColumnName()) + 1;
+        if (index < 0) {
+          continue;
+        }
+        builder.addStatement("$T.bind(statement, entity.$L, $L)", typeUtilType,
+                             property.getFieldName(), index);
+      }
+    }
+    return builder;
   }
 }

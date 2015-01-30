@@ -18,7 +18,7 @@ public final class TypeDefinition {
   // Properties
   private final PropertyDefinition idColumn;
   private final PropertyDefinition versionColumn;
-  private final PropertyDefinition[] columns;
+  private final PropertyDefinition[] properties;
   private final ConstraintDefinition[] constraintDefinitions;
   private final TriggerDefinition[] triggers;
   private final IndexDefinition[] indexes;
@@ -31,7 +31,7 @@ public final class TypeDefinition {
                  String beforeUpdateMethod,
                  String beforeDeleteMethod, PropertyDefinition idColumn,
                  PropertyDefinition versionColumn, String statement,
-                 PropertyDefinition[] columns,
+                 PropertyDefinition[] properties,
                  ConstraintDefinition[] constraintDefinitions,
                  TriggerDefinition[] triggers, IndexDefinition[] indexes) {
 
@@ -45,7 +45,7 @@ public final class TypeDefinition {
     this.statement = statement;
     this.idColumn = idColumn;
     this.versionColumn = versionColumn;
-    this.columns = columns;
+    this.properties = properties;
     this.constraintDefinitions = constraintDefinitions;
     this.triggers = triggers;
     this.indexes = indexes;
@@ -63,8 +63,8 @@ public final class TypeDefinition {
     return typeSimpleName;
   }
 
-  public PropertyDefinition[] getColumns() {
-    return columns;
+  public PropertyDefinition[] getProperties() {
+    return properties;
   }
 
   public ConstraintDefinition[] getConstraintDefinitions() {

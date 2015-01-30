@@ -6,7 +6,6 @@ import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import org.medimob.orm.internal.OpenHelper;
 import org.medimob.orm.processor.EntityProcessor;
 
 import java.io.BufferedReader;

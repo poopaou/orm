@@ -1,9 +1,10 @@
-package org.medimob.orm;
+package org.medimob.orm.internal;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 /**
+ * Sql statements helper.
  * Created by Poopaou on 20/01/2015.
  */
 public final class SqlUtils {
@@ -14,22 +15,32 @@ public final class SqlUtils {
   /**
    * Create sql delete.
    * @param tableName table's name.
-   * @param selection selections columns.
+   * @param id the id columns.
+   * @param version the version column
    * @return sql statement.
    */
   @NonNull
-  public static String createSqlDelete(@NonNull String tableName, @Nullable String[] selection) {
+  public static String createSqlDelete(@NonNull String tableName, @NonNull String id,
+                                       @Nullable String version) {
     StringBuilder builder = new StringBuilder("DELETE FROM ");
     builder.append(tableName);
-    if (selection != null && selection.length > 0) {
-      builder.append(" WHERE ");
-      appendColumnsEqValue(builder, tableName, selection);
+    String[] selection;
+    if (version != null) {
+      selection = new String[]{id, version};
+    } else {
+      selection = new String[]{id};
     }
+    builder.append(" WHERE ");
+    appendColumnsEqValue(builder, tableName, selection);
     return builder.toString();
   }
 
   /**
-   * Create sql insert.
+   * Create sql insert. 
+   * If version field is present is automatically initialize with '0' value.
+   * Version field cannot be binned.
+   *
+   * Bind parameter number is equals to the columns size. 
    *
    * @param tableName table's name.
    * @param columns   inserted columns.
@@ -57,6 +68,9 @@ public final class SqlUtils {
 
   /**
    * Create sql update.
+   *
+   * Id and version columns are always the last two statement's parameters.
+   * Version can be null. 
    *
    * @param tableName     table's name.
    * @param updateColumns update columns.

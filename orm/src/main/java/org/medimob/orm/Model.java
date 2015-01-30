@@ -7,8 +7,8 @@ import android.database.sqlite.SQLiteStatement;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import org.medimob.orm.internal.OpenHelper;
 import org.medimob.orm.internal.Session;
+import org.medimob.orm.internal.SqlUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,8 +32,7 @@ public abstract class Model<T> {
   // Entity attributes.
   private final String tableName;
   private final String[] queryColumns;
-  private final String[] insertColumns;
-  private final String[] updateColumns;
+
   // Model properties.
   private final String idColumn;
   private final String versionColumn;
@@ -43,18 +42,16 @@ public abstract class Model<T> {
   private SQLiteStatement insertStatement;
   private SQLiteStatement updateStatement;
   private SQLiteStatement deleteStatement;
+  private SQLiteStatement deleteByIdStatement;
   private OpenHelper helper;
 
-  protected Model(String tableName, String idColumn, String versionColumn, String[] queryColumns,
-                  String[] insertColumns, String[] updateColumns) {
+  protected Model(String tableName, String idColumn, String versionColumn, String[] queryColumns) {
     this.tableName = tableName;
     this.idColumn = idColumn;
     this.idSelection = idColumn + "=?";
     this.versionColumn = versionColumn;
 
     this.queryColumns = queryColumns;
-    this.insertColumns = insertColumns;
-    this.updateColumns = updateColumns;
 
     this.session = new Session<T>();
     this.selectArgsLocal = new ThreadLocal<String[]>();
@@ -113,7 +110,9 @@ public abstract class Model<T> {
         db.query(tableName, queryColumns, selection, selectionArg, null, having, null, "1");
     try {
       if (cursor.moveToFirst()) {
-        return readEntity(cursor);
+        T entity = newInstance();
+        readCursor(entity, cursor);
+        return entity;
       }
       return null;
     } finally {
@@ -158,7 +157,9 @@ public abstract class Model<T> {
       if (cursor.moveToFirst()) {
         List<T> results = new ArrayList<T>(cursor.getCount());
         do {
-          results.add(readEntity(cursor));
+          T entity = newInstance();
+          readCursor(entity, cursor);
+          results.add(entity);
         }
         while (cursor.moveToNext());
 
@@ -188,7 +189,8 @@ public abstract class Model<T> {
     Cursor cursor = db.query(tableName, queryColumns, idSelection, args, null, null, null);
     try {
       if (cursor.moveToFirst()) {
-        entity = readEntity(cursor);
+        entity = newInstance();
+        readCursor(entity, cursor);
         session.put(id, entity);
       }
       return entity;
@@ -299,9 +301,7 @@ public abstract class Model<T> {
       throw new OrmException("Entity is not new");
     }
     if (insertStatement == null) {
-      String version = versionColumn != null ? versionColumn : null;
-      final String sql = SqlUtils.createSqlInsert(tableName, insertColumns, version);
-      insertStatement = db.compileStatement(sql);
+      insertStatement = db.compileStatement(getInsertStatement());
     }
     bindInsert(insertStatement, entity);
     return insertStatement.executeInsert();
@@ -401,25 +401,15 @@ public abstract class Model<T> {
 
   private boolean updateInsideSynchronized(SQLiteDatabase db, T entity) {
     if (updateStatement == null) {
-      String version = versionColumn != null ? versionColumn : null;
-      final String sql = SqlUtils.createSqlUpdate(tableName, updateColumns, idColumn, version);
-      updateStatement = db.compileStatement(sql);
+      updateStatement = db.compileStatement(getUpdateStatement());
     }
 
     bindUpdate(updateStatement, entity);
-    bindSelection(updateStatement, entity, updateColumns.length);
     if (updateStatement.executeUpdateDelete() == 1) {
       session.remove(getId(entity));
       return true;
     }
     return false;
-  }
-
-  private void bindSelection(SQLiteStatement updateStatement, T entity, int offset) {
-    updateStatement.bindLong(offset, getId(entity));
-    if (versionColumn != null) {
-      updateStatement.bindLong(offset + 1, getVersion(entity));
-    }
   }
 
   /**
@@ -500,7 +490,7 @@ public abstract class Model<T> {
       synchronized (deleteLock) {
         int count = 0;
         for (T entity : entities) {
-          deleteInsideSynchronized(db, getId(entity));
+          deleteInsideSynchronized(db, entity);
           count++;
         }
         return count;
@@ -511,7 +501,7 @@ public abstract class Model<T> {
         try {
           int count = 0;
           for (T entity : entities) {
-            deleteInsideSynchronized(db, getId(entity));
+            deleteInsideSynchronized(db, entity);
             count++;
           }
           db.setTransactionSuccessful();
@@ -536,13 +526,13 @@ public abstract class Model<T> {
     SQLiteDatabase db = getWritableDatabase();
     if (db.isDbLockedByCurrentThread()) {
       synchronized (deleteLock) {
-        return deleteInsideSynchronized(db, getId(entity));
+        return deleteInsideSynchronized(db, entity);
       }
     } else {
       db.beginTransaction();
       synchronized (deleteLock) {
         try {
-          if (deleteInsideSynchronized(db, getId(entity))) {
+          if (deleteInsideSynchronized(db, entity)) {
             db.setTransactionSuccessful();
             return true;
           }
@@ -566,14 +556,26 @@ public abstract class Model<T> {
   public boolean delete(@NonNull T entity) {
     SQLiteDatabase db = getWritableDatabase();
     synchronized (deleteLock) {
-      return deleteInsideSynchronized(db, getId(entity));
+      return deleteInsideSynchronized(db, entity);
     }
   }
 
-  private boolean deleteInsideSynchronized(SQLiteDatabase db, long id) {
+  private boolean deleteInsideSynchronized(SQLiteDatabase db, T entity) {
     if (deleteStatement == null) {
-      final String sql = SqlUtils.createSqlDelete(tableName, new String[]{idSelection});
-      deleteStatement = db.compileStatement(sql);
+      deleteStatement = db.compileStatement(getDeleteStatement());
+    }
+    bindDelete(deleteStatement, entity);
+    if (deleteStatement.executeUpdateDelete() == 1) {
+      session.remove(getId(entity));
+      return true;
+    }
+    return false;
+  }
+
+  private boolean deleteInsideSynchronized(SQLiteDatabase db, long id) {
+    if (deleteByIdStatement == null) {
+      final String sql = SqlUtils.createSqlDelete(tableName, idColumn, null);
+      deleteByIdStatement = db.compileStatement(sql);
     }
     deleteStatement.bindLong(1, id);
     if (deleteStatement.executeUpdateDelete() == 1) {
@@ -596,11 +598,21 @@ public abstract class Model<T> {
     return 0;
   }
 
-  protected abstract T readEntity(Cursor cursor);
+  protected abstract T newInstance();
 
-  protected abstract void bindUpdate(SQLiteStatement statement, T entity);
+  protected abstract void readCursor(T entity, Cursor cursor);
+
+  protected abstract void onCreate(SQLiteDatabase db);
+
+  protected abstract String getInsertStatement();
 
   protected abstract void bindInsert(SQLiteStatement statement, T entity);
 
-  public abstract void onCreate(SQLiteDatabase db);
+  protected abstract String getUpdateStatement();
+
+  protected abstract void bindUpdate(SQLiteStatement statement, T entity);
+
+  protected abstract String getDeleteStatement();
+
+  protected abstract void bindDelete(SQLiteStatement statement, T entity);
 }

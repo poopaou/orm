@@ -1,8 +1,7 @@
 package org.medimob.orm.processor.dll;
 
-import javax.annotation.Nonnull;
-
 /**
+ * Column or Table constraint definition.
  * Created by Poopaou on 21/01/2015.
  */
 public final class ConstraintDefinition {
@@ -11,23 +10,20 @@ public final class ConstraintDefinition {
   private final String name;
   private final String statement;
 
-  ConstraintDefinition(@Nonnull Constraints type, @Nonnull String name, @Nonnull String statement) {
+  ConstraintDefinition(Constraints type, String name, String statement) {
     this.type = type;
     this.name = name;
     this.statement = statement;
   }
 
-  @Nonnull
   public Constraints getType() {
     return type;
   }
 
-  @Nonnull
   public String getName() {
     return name;
   }
 
-  @Nonnull
   public String getStatement() {
     return statement;
   }
@@ -43,14 +39,7 @@ public final class ConstraintDefinition {
 
     ConstraintDefinition that = (ConstraintDefinition) obj;
 
-    if (!name.equalsIgnoreCase(that.name)) {
-      return false;
-    }
-    if (type != that.type) {
-      return false;
-    }
-
-    return true;
+    return name.equalsIgnoreCase(that.name) && type == that.type;
   }
 
   @Override

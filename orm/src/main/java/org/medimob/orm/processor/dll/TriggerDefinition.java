@@ -1,8 +1,9 @@
 package org.medimob.orm.processor.dll;
 
-import javax.annotation.Nonnull;
 
 /**
+ * Trigger definition.
+ *
  * Created by Poopaou on 17/01/2015.
  */
 public final class TriggerDefinition {
@@ -17,17 +18,14 @@ public final class TriggerDefinition {
     this.statement = statement;
   }
 
-  @Nonnull
   public String getName() {
     return name;
   }
 
-  @Nonnull
   public String getTableName() {
     return tableName;
   }
 
-  @Nonnull
   public String getStatement() {
     return statement;
   }
@@ -43,14 +41,8 @@ public final class TriggerDefinition {
 
     TriggerDefinition that = (TriggerDefinition) other;
 
-    if (!name.equalsIgnoreCase(that.name)) {
-      return false;
-    }
-    if (!tableName.equalsIgnoreCase(that.tableName)) {
-      return false;
-    }
+    return name.equalsIgnoreCase(that.name) && tableName.equalsIgnoreCase(that.tableName);
 
-    return true;
   }
 
   @Override
@@ -62,11 +54,7 @@ public final class TriggerDefinition {
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder("TriggerModel{");
-    sb.append("name='").append(name).append('\'');
-    sb.append(", tableName=").append(tableName);
-    sb.append(", statement=").append(statement);
-    sb.append('}');
-    return sb.toString();
+    return "TriggerModel{" + "name='" + name + '\'' + ", tableName=" + tableName + ", statement="
+           + statement + '}';
   }
 }

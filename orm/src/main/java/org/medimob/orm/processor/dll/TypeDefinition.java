@@ -1,10 +1,8 @@
 package org.medimob.orm.processor.dll;
 
-import android.support.annotation.Nullable;
-
-import javax.annotation.Nonnull;
-
 /**
+ * Type definition.
+ *
  * Created by Poopaou on 17/01/2015.
  */
 public final class TypeDefinition {
@@ -27,15 +25,15 @@ public final class TypeDefinition {
 
   private final String statement;
 
-  TypeDefinition(@Nonnull String tableName, @Nonnull String typeSimpleName,
-                 @Nonnull String typeQualifiedName,
-                 @Nonnull String packageName, @Nullable String beforeInsertMethod,
-                 @Nullable String beforeUpdateMethod,
-                 @Nullable String beforeDeleteMethod, @Nonnull PropertyDefinition idColumn,
-                 @Nullable PropertyDefinition versionColumn, @Nonnull String statement,
-                 @Nonnull PropertyDefinition[] columns,
-                 @Nonnull ConstraintDefinition[] constraintDefinitions,
-                 @Nonnull TriggerDefinition[] triggers, IndexDefinition[] indexes) {
+  TypeDefinition(String tableName, String typeSimpleName,
+                 String typeQualifiedName,
+                 String packageName, String beforeInsertMethod,
+                 String beforeUpdateMethod,
+                 String beforeDeleteMethod, PropertyDefinition idColumn,
+                 PropertyDefinition versionColumn, String statement,
+                 PropertyDefinition[] columns,
+                 ConstraintDefinition[] constraintDefinitions,
+                 TriggerDefinition[] triggers, IndexDefinition[] indexes) {
 
     this.tableName = tableName;
     this.typeSimpleName = typeSimpleName;
@@ -53,72 +51,58 @@ public final class TypeDefinition {
     this.indexes = indexes;
   }
 
-  @Nonnull
   public String getStatement() {
     return statement;
   }
 
-  @Nonnull
   public String getTableName() {
     return tableName;
   }
 
-  @Nonnull
   public String getTypeSimpleName() {
     return typeSimpleName;
   }
 
-  @Nonnull
   public PropertyDefinition[] getColumns() {
     return columns;
   }
 
-  @Nonnull
   public ConstraintDefinition[] getConstraintDefinitions() {
     return constraintDefinitions;
   }
 
-  @Nonnull
   public String getTypeQualifiedName() {
     return typeQualifiedName;
   }
 
-  @Nonnull
   public String getPackageName() {
     return packageName;
   }
 
-  @Nullable
   public String getBeforeInsertMethod() {
     return beforeInsertMethod;
   }
 
-  @Nullable
   public String getBeforeUpdateMethod() {
     return beforeUpdateMethod;
   }
 
-  @Nullable
   public String getBeforeDeleteMethod() {
     return beforeDeleteMethod;
   }
 
-  @Nonnull
   public PropertyDefinition getIdColumn() {
     return idColumn;
   }
 
-  @Nullable
   public PropertyDefinition getVersionColumn() {
     return versionColumn;
   }
 
-  @Nonnull
   public TriggerDefinition[] getTriggers() {
     return triggers;
   }
 
-  @Nonnull
   public IndexDefinition[] getIndexes() {
     return indexes;
   }
@@ -134,11 +118,7 @@ public final class TypeDefinition {
 
     TypeDefinition that = (TypeDefinition) other;
 
-    if (!tableName.equalsIgnoreCase(that.tableName)) {
-      return false;
-    }
-
-    return true;
+    return tableName.equalsIgnoreCase(that.tableName);
   }
 
   @Override
@@ -148,17 +128,11 @@ public final class TypeDefinition {
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder("TypeMeta{");
-    sb.append("tableName='").append(tableName).append('\'');
-    sb.append(", typeSimpleName='").append(typeSimpleName).append('\'');
-    sb.append(", typeQualifiedName='").append(typeQualifiedName).append('\'');
-    sb.append(", packageName='").append(packageName).append('\'');
-    sb.append(", beforeInsertMethod='").append(beforeInsertMethod).append('\'');
-    sb.append(", beforeUpdateMethod='").append(beforeUpdateMethod).append('\'');
-    sb.append(", beforeDeleteMethod='").append(beforeDeleteMethod).append('\'');
-    sb.append(", idColumn=").append(idColumn);
-    sb.append(", statement='").append(statement).append('\'');
-    sb.append('}');
-    return sb.toString();
+    return "TypeMeta{" + "tableName='" + tableName + '\'' + ", typeSimpleName='" + typeSimpleName
+           + '\'' + ", typeQualifiedName='" + typeQualifiedName + '\'' + ", packageName='"
+           + packageName + '\'' + ", beforeInsertMethod='" + beforeInsertMethod + '\''
+           + ", beforeUpdateMethod='" + beforeUpdateMethod + '\'' + ", beforeDeleteMethod='"
+           + beforeDeleteMethod + '\'' + ", idColumn=" + idColumn + ", statement='" + statement
+           + '\'' + '}';
   }
 }

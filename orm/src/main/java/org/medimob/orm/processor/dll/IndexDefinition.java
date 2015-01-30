@@ -1,8 +1,9 @@
 package org.medimob.orm.processor.dll;
 
-import javax.annotation.Nonnull;
 
 /**
+ * Index definition.
+ *
  * Created by Poopaou on 17/01/2015.
  */
 public final class IndexDefinition {
@@ -11,23 +12,20 @@ public final class IndexDefinition {
   private final String tableName;
   private final String statement;
 
-  IndexDefinition(@Nonnull String name, @Nonnull String tableName, @Nonnull String statement) {
+  IndexDefinition(String name, String tableName, String statement) {
     this.name = name;
     this.tableName = tableName;
     this.statement = statement;
   }
 
-  @Nonnull
   public String getTableName() {
     return tableName;
   }
 
-  @Nonnull
   public String getName() {
     return name;
   }
 
-  @Nonnull
   public String getStatement() {
     return statement;
   }
@@ -43,14 +41,7 @@ public final class IndexDefinition {
 
     IndexDefinition that = (IndexDefinition) other;
 
-    if (!name.equalsIgnoreCase(that.name)) {
-      return false;
-    }
-    if (!tableName.equalsIgnoreCase(that.tableName)) {
-      return false;
-    }
-
-    return true;
+    return name.equalsIgnoreCase(that.name) && tableName.equalsIgnoreCase(that.tableName);
   }
 
   @Override
@@ -62,11 +53,7 @@ public final class IndexDefinition {
 
   @Override
   public String toString() {
-    final StringBuilder sb = new StringBuilder("IndexModel{");
-    sb.append("tableName=").append(tableName);
-    sb.append(", name='").append(name).append('\'');
-    sb.append(", statement=").append(statement);
-    sb.append('}');
-    return sb.toString();
+    return "IndexModel{" + "tableName=" + tableName + ", name='" + name + '\'' + ", statement="
+           + statement + '}';
   }
 }

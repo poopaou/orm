@@ -22,8 +22,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.VariableElement;
@@ -37,6 +35,8 @@ import static org.medimob.orm.processor.ProcessorUtils.resolveUniqueName;
 import static org.medimob.orm.processor.ProcessorUtils.typeToString;
 
 /**
+ * Propetry processor.
+ *
  * Created by Poopaou on 18/01/2015.
  */
 class PropertyProcessor {
@@ -70,9 +70,9 @@ class PropertyProcessor {
     typeMirrorLookup = Collections.unmodifiableMap(temp);
   }
 
-  public void process(@Nonnull VariableElement element,
-                      @Nonnull TypeDefinitionBuilder typeDefinitionBuilder,
-                      @Nonnull String tableName)
+  public void process(VariableElement element,
+                      TypeDefinitionBuilder typeDefinitionBuilder,
+                      String tableName)
       throws MappingException {
     // If column annotation is present
     // on a @Id or @Version annotated
@@ -87,9 +87,9 @@ class PropertyProcessor {
     }
   }
 
-  protected void processId(@Nonnull VariableElement element,
-                           @Nonnull TypeDefinitionBuilder tableBuilder,
-                           @Nonnull Id id) throws MappingException {
+  protected void processId(VariableElement element,
+                           TypeDefinitionBuilder tableBuilder,
+                           Id id) throws MappingException {
     // For simplification purpose @Id fields
     // are only supported for long type.
     if (PropertyType.LONG != getFieldType(element)) {
@@ -113,9 +113,9 @@ class PropertyProcessor {
     tableBuilder.setIdColumn(idPropertyDefinition);
   }
 
-  protected void processVersion(@Nonnull VariableElement element,
-                                @Nonnull TypeDefinitionBuilder tableBuilder,
-                                @Nonnull Version version) throws MappingException {
+  protected void processVersion(VariableElement element,
+                                TypeDefinitionBuilder tableBuilder,
+                                Version version) throws MappingException {
     PropertyType type = getFieldType(element);
     if (type == null || type != PropertyType.LONG && type != PropertyType.INTEGER) {
       throw new MappingException("@Version annotated column must be of type long or int");
@@ -140,9 +140,9 @@ class PropertyProcessor {
     tableBuilder.setVersionColumn(versionPropertyDefinition);
   }
 
-  protected void processColumn(@Nonnull VariableElement element,
-                               @Nonnull TypeDefinitionBuilder tableBuilder,
-                               String tableName, @Nonnull Column column) throws MappingException {
+  protected void processColumn(VariableElement element,
+                               TypeDefinitionBuilder tableBuilder,
+                               String tableName, Column column) throws MappingException {
     // Resolve column name, by default if
     // no name is provided on the @Entity annotation
     // the column's name is equal to the property's
@@ -188,9 +188,9 @@ class PropertyProcessor {
     tableBuilder.addColumn(columnBuilder.build());
   }
 
-  protected void processUnique(@Nonnull String columnName,
-                               @Nonnull PropertyDefinitionBuilder builder, @Nonnull Column column,
-                               @Nullable Unique unique) throws MappingException {
+  protected void processUnique(String columnName,
+                               PropertyDefinitionBuilder builder, Column column,
+                               Unique unique) throws MappingException {
     if (unique == null && column.unique()) {
       builder.addConstraints(ConstraintDefinitionBuilder.newColumnConstraint()
                                  .setType(Constraints.UNIQUE)
@@ -206,9 +206,9 @@ class PropertyProcessor {
     }
   }
 
-  protected void processNotNull(@Nonnull String columnName,
-                                @Nonnull PropertyDefinitionBuilder builder,
-                                @Nonnull Column column, @Nullable NotNull notNull)
+  protected void processNotNull(String columnName,
+                                PropertyDefinitionBuilder builder,
+                                Column column, NotNull notNull)
       throws MappingException {
 
     if (notNull == null && column.notNull()) {
@@ -226,9 +226,9 @@ class PropertyProcessor {
     }
   }
 
-  protected void processIndexed(String columnName, @Nonnull TypeDefinitionBuilder tableBuilder,
-                                String tableName, @Nonnull Column column,
-                                @Nullable Index index) throws MappingException {
+  protected void processIndexed(String columnName, TypeDefinitionBuilder tableBuilder,
+                                String tableName, Column column,
+                                Index index) throws MappingException {
     if (index == null && column.indexed()) {
       IndexDefinition indexDefinition = new IndexDefinitionBuilder()
           .setName(columnName)
@@ -249,9 +249,9 @@ class PropertyProcessor {
     }
   }
 
-  protected void processCheck(String columnName, @Nonnull PropertyDefinitionBuilder builder,
-                              @Nonnull Column column,
-                              @Nullable Check check) throws MappingException {
+  protected void processCheck(String columnName, PropertyDefinitionBuilder builder,
+                              Column column,
+                              Check check) throws MappingException {
     if (check == null && !"".equals(column.check())) {
       builder.addConstraints(ConstraintDefinitionBuilder.newColumnConstraint()
                                  .setType(Constraints.CHECK)

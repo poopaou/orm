@@ -24,8 +24,7 @@ import static javax.lang.model.element.Modifier.PUBLIC;
 import static javax.lang.model.element.Modifier.STATIC;
 
 /**
- * Generate Model class helper.
- * Created by Poopaou on 20/01/2015.
+ * Generate Model class helper. Created by Poopaou on 20/01/2015.
  */
 class TypeWriter {
 
@@ -103,7 +102,7 @@ class TypeWriter {
     List<String> insertCols = new ArrayList<String>();
     List<String> updateCols = new ArrayList<String>();
 
-    //queryCols.add(idField.getColumnName());
+    queryCols.add(idField.getColumnName());
     String columnName;
     for (PropertyDefinition columnDef : typeDefinition.getColumns()) {
       columnName = columnDef.getColumnName();

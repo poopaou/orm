@@ -54,9 +54,9 @@ import static org.medimob.orm.processor.ProcessorUtils.resolveUniqueName;
 public class EntityProcessor extends AbstractProcessor {
 
   public static final String CLASS_MODEL_SUFFIX = "$$Model";
-  public static final String ENTITY_LIST_FILE_PATH = "META-INF/com.medimob.Entity";
+  public static final String ENTITY_LIST_FILE_PATH = "META-INF/org.medimob.Orm";
 
-  @SuppressWarnings("unchecked" )
+  @SuppressWarnings("unchecked")
   private static final List<Class<? extends Annotation>> SUPPORTED_ANNOTATION = Arrays.asList(
       Check.class,
       Column.class,

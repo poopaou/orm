@@ -1,17 +1,17 @@
 # BASIC-ORM
-Beta Android database helper using Annotation processor and Sqlite database.
+**Beta** Android database helper using Annotation processor and Sqlite database.
 
-Orm does not behave like 'traditional' orm libraries. Entities are not binned to any "session" or something like this.
-Entities are simple java objects and can behave exactly like you expect to.
+Orm does not behave like 'traditional' orm libraries. Entities are not attached to any kind of 'state' or 'session',
+they're just simples java objects and can behave exactly like you expect.
  
-Manage CRUD operation as simple as you can and leave Basic-orm generate for you all the boring and error prone code.
+Perform create/read/update/delete operation as simple as you can and leave Basic-orm generate all the boring and error prone code.
 
-It also provide some db optimisations like using prepared statements, caching, Hibernate Criteria like querying, and version control.
+Basic-Orm main goal is to be simple and fast : no invasive code or reflection, just compile time generated code and sql.
+It also comes with some db optimisations like prepared statements, caching, Hibernate Criteria like querying, and version control.
 
 ## Usage
 
-Annotate your class with `@Entity` than define class properties with `@Column`. 
-Orm handles query, insert, update and delete and schema generation.
+Begin by Annotate your class with `@Entity` than define properties with `@Column`. 
 
 ###Entity example :
 ```
@@ -51,6 +51,8 @@ Get orm instance :
 Orm.getInstance(context);
 ```
 
+**That's it.**
+
 ### CRUD operation
 
 ```
@@ -74,7 +76,7 @@ orm.deleteInTx(Castle.class, castle);
 
 ## Basic Rules
 
-Fields type must be one of : 
+Field type must be one of : 
 * Primitives  (`boolean`, `long`, `double`, `int`, `float`, `short`, `byte`, `char`, `short`)
 * Primitives wrapper (`Integer`, `Boolean`...)
 * `String` or `java.util.Date`
@@ -86,7 +88,7 @@ Class must provide a `public` or `default` (package protected) no-arguments cons
 
 Entity must have a unique `@id` annotated field of type `long`
 
-##Restrictions.
+## Restrictions
 
 Orm is still a beta version, this include some limitations.
 * Only simple long primary key is supported.
@@ -95,3 +97,21 @@ Orm is still a beta version, this include some limitations.
 * Foreign keys are not supported (yet).
 * Foreign object loading is not supported (and probably never will).
 * Database visioning is not supported (?).
+
+## License
+
+```
+Copyright 2015 Cyrille Sondag
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```

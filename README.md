@@ -78,7 +78,7 @@ orm.deleteInTx(Castle.class, castle);
 
 Field type must be one of : 
 * Primitives  (`boolean`, `long`, `double`, `int`, `float`, `short`, `byte`, `char`, `short`)
-* Primitives wrapper (`Integer`, `Boolean`...)
+* Object wrapper (`Integer`, `Boolean`...)
 * `String` or `java.util.Date`
 * `byte[]`
 

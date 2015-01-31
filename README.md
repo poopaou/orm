@@ -13,7 +13,7 @@ It also comes with some db optimisations like prepared statements, caching, Hibe
 
 Begin by Annotate your class with `@Entity` than define properties with `@Column`. 
 
-###Entity example :
+Example :
 ```
 @Entity
 public class Castle {
@@ -53,16 +53,17 @@ Orm.getInstance(context);
 
 **That's it.**
 
-### CRUD operation
+##### CRUD operation
 
 ```
+// Get orm instance.
 Orm orm = Orm.getInstance(context);
 
 // Create a new castle.
 Castle castle = new Castle("Camelot");
 long id = orm.insertInTx(Castle.class, foo);
 
-// Load from db 
+// Load from db.
 castle = orm.loadById(Castle.class, id)
 
 // Update the castle's name.
@@ -71,7 +72,6 @@ orm.updateInTx(Castle.class, foo);
 
 // Delete (not a suitable place).
 orm.deleteInTx(Castle.class, castle);
-
 ```
 
 ## Basic Rules

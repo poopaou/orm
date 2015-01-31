@@ -2,11 +2,11 @@ package org.medimob.orm.processor.dll;
 
 import org.medimob.orm.annotation.Conflict;
 import org.medimob.orm.annotation.Sort;
+import org.medimob.orm.internal.StatementBuilder;
 import org.medimob.orm.processor.MappingException;
 
 /**
- * Column or table constraint definition.
- * Created by Poopaou on 21/01/2015.
+ * Column or table constraint definition. Created by Poopaou on 21/01/2015.
  */
 public class ConstraintDefinitionBuilder {
 

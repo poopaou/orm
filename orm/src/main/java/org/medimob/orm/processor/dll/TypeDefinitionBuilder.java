@@ -1,5 +1,6 @@
 package org.medimob.orm.processor.dll;
 
+import org.medimob.orm.internal.StatementBuilder;
 import org.medimob.orm.processor.MappingException;
 
 import java.util.HashSet;
@@ -97,6 +98,7 @@ public class TypeDefinitionBuilder {
 
   /**
    * Add a new constraint to type.
+   *
    * @param constraintDefinition constraint
    * @return this.
    * @throws MappingException if constraint is already defined.
@@ -110,6 +112,7 @@ public class TypeDefinitionBuilder {
 
   /**
    * add a new trigger to type.
+   *
    * @param trigger trigger
    * @return this.
    * @throws MappingException if trigger is already defined.
@@ -121,6 +124,7 @@ public class TypeDefinitionBuilder {
 
   /**
    * add a new index to type.
+   *
    * @param index index
    * @return this.
    * @throws MappingException if index is already defined.
@@ -132,6 +136,7 @@ public class TypeDefinitionBuilder {
 
   /**
    * Build new type definition
+   *
    * @return type definition.
    * @throws MappingException if definition is not valid.
    */

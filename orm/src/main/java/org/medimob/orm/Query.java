@@ -16,6 +16,7 @@ public class Query<T> {
   private boolean distinct;
   private String having;
   private List<String> wheres;
+  private String limit;
 
   public Query(Property[] properties, String table) {
     this.properties = properties;
@@ -38,6 +39,11 @@ public class Query<T> {
 
   public T query() {
     return null;
+  }
+
+  public Query<T> setMaxResult(int maxResult) {
+    limit = String.valueOf(maxResult);
+    return this;
   }
 
   public static final class Property {

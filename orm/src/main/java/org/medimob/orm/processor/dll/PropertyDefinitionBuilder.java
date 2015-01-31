@@ -1,5 +1,6 @@
 package org.medimob.orm.processor.dll;
 
+import org.medimob.orm.internal.StatementBuilder;
 import org.medimob.orm.processor.MappingException;
 import org.medimob.orm.processor.PropertyType;
 
@@ -65,6 +66,7 @@ public class PropertyDefinitionBuilder {
 
   /**
    * Build property definition.
+   *
    * @return property definition.
    * @throws MappingException if definition is not valid.
    */

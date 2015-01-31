@@ -1,4 +1,4 @@
-package org.medimob.orm.processor.dll;
+package org.medimob.orm.internal;
 
 import android.support.annotation.NonNull;
 
@@ -70,6 +70,7 @@ public class StatementBuilder {
 
   /**
    * Close bracket.
+   *
    * @return builder.
    */
   public StatementBuilder closeBracket() {

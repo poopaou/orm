@@ -1,5 +1,6 @@
 package org.medimob.orm.processor.dll;
 
+import org.medimob.orm.internal.StatementBuilder;
 import org.medimob.orm.processor.MappingException;
 
 public class IndexDefinitionBuilder {

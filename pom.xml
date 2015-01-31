@@ -58,6 +58,7 @@
         <android.platform>16</android.platform>
         <android.annotation.version>20.0.0</android.annotation.version>
         <javawriter.version>2.5.0</javawriter.version>
+        <javapoet.version>1.0.0</javapoet.version>
         <junit.version>4.10</junit.version>
         <robolectric.version>2.4</robolectric.version>
         <fest.android.version>1.0.7</fest.android.version>
@@ -81,8 +82,8 @@
 
             <dependency>
                 <groupId>com.squareup</groupId>
-                <artifactId>javawriter</artifactId>
-                <version>${javawriter.version}</version>
+                <artifactId>javapoet</artifactId>
+                <version>${javapoet.version}</version>
             </dependency>
 
             <dependency>

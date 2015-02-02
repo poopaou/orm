@@ -13,7 +13,7 @@ It comes with some db optimisations like prepared statements, caching, Hibernate
 Begin by Annotate your class with `@Model` than define properties with `@Property`. 
 
 Example :
-```
+```java
 @Model
 public class Castle {
     
@@ -35,7 +35,7 @@ public class Castle {
 ```
 
 Declare in your `AndroidManifest.xml` file the database name :
-```java
+```xml
 ...
    <application>
         ...
@@ -45,9 +45,9 @@ Declare in your `AndroidManifest.xml` file the database name :
 ...
 ```
 
-Use :
+Usage :
 
-```
+```java
 // Get orm instance.
 Orm orm = Orm.getInstance(context);
 
@@ -77,9 +77,7 @@ Field type must be one of :
 * `byte[]`
 
 Field visibility must be `public` or `default` (package protected).
-
 Class must provide a `public` or `default` (package protected) no-arguments constructor.
-
 Entity must have a unique `@id` annotated field of type `long`
 
 ## Restrictions

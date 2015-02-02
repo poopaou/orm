@@ -1,11 +1,11 @@
 package org.medimob.orm.processor;
 
 import org.medimob.orm.annotation.Check;
-import org.medimob.orm.annotation.Column;
-import org.medimob.orm.annotation.Entity;
 import org.medimob.orm.annotation.Id;
 import org.medimob.orm.annotation.Index;
+import org.medimob.orm.annotation.Model;
 import org.medimob.orm.annotation.NotNull;
+import org.medimob.orm.annotation.Property;
 import org.medimob.orm.annotation.Table;
 import org.medimob.orm.annotation.Trigger;
 import org.medimob.orm.annotation.Unique;
@@ -14,15 +14,17 @@ import org.medimob.orm.processor.dll.ConstraintDefinitionBuilder;
 import org.medimob.orm.processor.dll.Constraints;
 import org.medimob.orm.processor.dll.IndexDefinitionBuilder;
 import org.medimob.orm.processor.dll.TriggerDefinitionBuilder;
+import org.medimob.orm.processor.dll.TypeDefinition;
 import org.medimob.orm.processor.dll.TypeDefinitionBuilder;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -58,8 +60,7 @@ public class EntityProcessor extends AbstractProcessor {
 
   @SuppressWarnings("unchecked")
   private static final List<Class<? extends Annotation>> SUPPORTED_ANNOTATION = Arrays.asList(
-      Check.class,
-      Column.class,
+      Property.class,
       Id.class,
       Index.class,
       NotNull.class,
@@ -71,7 +72,7 @@ public class EntityProcessor extends AbstractProcessor {
 
   private Elements elementUtils;
   private PropertyProcessor propertyProcessor;
-  private List<String> proceededTypeMap;
+  private Map<String, TypeDefinition> proceededTypeMap;
   private TypeWriter typeWriter;
 
   @Override
@@ -79,15 +80,15 @@ public class EntityProcessor extends AbstractProcessor {
     super.init(processingEnv);
 
     this.elementUtils = processingEnv.getElementUtils();
-    this.propertyProcessor = new PropertyProcessor(processingEnv);
-    proceededTypeMap = new ArrayList<String>();
+    this.propertyProcessor = new PropertyProcessor(processingEnv, this);
+    proceededTypeMap = new HashMap<String, TypeDefinition>();
     typeWriter = new TypeWriter(processingEnv.getFiler());
   }
 
   @Override
   public Set<String> getSupportedAnnotationTypes() {
     HashSet<String> supportTypes = new HashSet<String>();
-    supportTypes.add(Entity.class.getCanonicalName());
+    supportTypes.add(Model.class.getCanonicalName());
     for (Class<? extends Annotation> c : SUPPORTED_ANNOTATION) {
       supportTypes.add(c.getCanonicalName());
     }
@@ -101,46 +102,12 @@ public class EntityProcessor extends AbstractProcessor {
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-    for (Element element : roundEnv.getElementsAnnotatedWith(Entity.class)) {
+    for (Element element : roundEnv.getElementsAnnotatedWith(Model.class)) {
       try {
-        TypeElement typeElement = (TypeElement) element;
-        // If the class as already be proceeded skip execution.
-        final String typeQualifiedName = typeElement.getQualifiedName().toString();
-        if (proceededTypeMap.contains(typeQualifiedName)) {
-          continue;
-        }
 
-        // Validate class Access :
-        // - A least Package protected.
-        // - With a no arg constructor.
-        // - not a inner class.
-        validateClassElement(typeElement);
-
-        final String tableName =
-            resolveTableName(typeElement, typeElement.getAnnotation(Entity.class));
-        final PackageElement packageElement = elementUtils.getPackageOf(element);
-
-        TypeDefinitionBuilder tableBuilder = new TypeDefinitionBuilder()
-            .setTableName(tableName)
-            .setTypeQualifiedName(typeQualifiedName)
-            .setTypeSimpleName(element.getSimpleName().toString())
-            .setPackageName(packageElement.getQualifiedName().toString());
-
-        // Map columns.
-        List<? extends Element> members = elementUtils.getAllMembers(typeElement);
-        for (VariableElement field : ElementFilter.fieldsIn(members)) {
-          propertyProcessor.process(field, tableBuilder, tableName);
-        }
-
-        processTable(tableBuilder, tableName, element.getAnnotation(Table.class));
-
-        typeWriter.writeType(typeElement, tableBuilder.build());
-        proceededTypeMap.add(typeQualifiedName);
+        getTypeDefinition((TypeElement) element);
 
       } catch (MappingException e) {
-        processingEnv.getMessager()
-            .printMessage(Diagnostic.Kind.ERROR, e.getMessage(), element);
-      } catch (IOException e) {
         processingEnv.getMessager()
             .printMessage(Diagnostic.Kind.ERROR, e.getMessage(), element);
       }
@@ -151,10 +118,16 @@ public class EntityProcessor extends AbstractProcessor {
         FileObject fo = processingEnv.getFiler()
             .createResource(StandardLocation.CLASS_OUTPUT, "", ENTITY_LIST_FILE_PATH);
         BufferedWriter bufferedWriter = new BufferedWriter(fo.openWriter());
-        for (String type : proceededTypeMap) {
-          bufferedWriter.append(type);
+
+        for (Map.Entry<String, TypeDefinition> entry : proceededTypeMap.entrySet()) {
+          // Write java file.
+          typeWriter.writeType(entry.getValue());
+
+          // Append metadata.
+          bufferedWriter.append(entry.getKey());
           bufferedWriter.newLine();
         }
+
         bufferedWriter.close();
       } catch (IOException e) {
         processingEnv.getMessager()
@@ -163,6 +136,44 @@ public class EntityProcessor extends AbstractProcessor {
     }
     return true;
   }
+
+  TypeDefinition getTypeDefinition(TypeElement typeElement) throws MappingException {
+    // If the class as already be proceeded skip execution.
+    final String typeQName = typeElement.getQualifiedName().toString();
+    TypeDefinition definition = proceededTypeMap.get(typeQName);
+    if (definition != null) {
+      return definition;
+    }
+
+    // Validate class Access :
+    // - A least Package protected.
+    // - With a no arg constructor.
+    // - not a inner class.
+    validateClassElement(typeElement);
+
+    final String tableName =
+        resolveTableName(typeElement, typeElement.getAnnotation(Model.class));
+    final PackageElement packageElement = elementUtils.getPackageOf(typeElement);
+
+    TypeDefinitionBuilder tableBuilder = new TypeDefinitionBuilder()
+        .setTableName(tableName)
+        .setTypeQualifiedName(typeQName)
+        .setTypeSimpleName(typeElement.getSimpleName().toString())
+        .setPackageName(packageElement.getQualifiedName().toString());
+
+    // Map columns.
+    List<? extends Element> members = elementUtils.getAllMembers(typeElement);
+    for (VariableElement field : ElementFilter.fieldsIn(members)) {
+      propertyProcessor.process(field, tableBuilder, tableName);
+    }
+
+    processTable(tableBuilder, tableName, typeElement.getAnnotation(Table.class));
+
+    definition = tableBuilder.build();
+    proceededTypeMap.put(typeQName, definition);
+    return definition;
+  }
+
 
   private void validateClassElement(TypeElement element) throws MappingException {
     if (!element.getKind().equals(ElementKind.CLASS)) {

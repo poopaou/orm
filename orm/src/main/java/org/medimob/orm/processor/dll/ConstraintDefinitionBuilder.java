@@ -1,9 +1,13 @@
 package org.medimob.orm.processor.dll;
 
+import org.medimob.orm.annotation.Action;
 import org.medimob.orm.annotation.Conflict;
 import org.medimob.orm.annotation.Sort;
 import org.medimob.orm.internal.StatementBuilder;
 import org.medimob.orm.processor.MappingException;
+
+import static org.medimob.orm.processor.dll.DefinitionUtils.notEmpty;
+import static org.medimob.orm.processor.dll.DefinitionUtils.notNull;
 
 /**
  * Column or table constraint definition. Created by Poopaou on 21/01/2015.
@@ -18,6 +22,10 @@ public class ConstraintDefinitionBuilder {
   private Sort sort;
   private boolean autoincrement;
   private boolean columnConstraint;
+  private Action onUpdateAction;
+  private Action onDeleteAction;
+  private String referenceTable;
+  private String referenceColumn;
 
   private ConstraintDefinitionBuilder(boolean columnConstraint) {
     this.columnConstraint = columnConstraint;
@@ -29,6 +37,26 @@ public class ConstraintDefinitionBuilder {
 
   public static ConstraintDefinitionBuilder newColumnConstraint() {
     return new ConstraintDefinitionBuilder(true);
+  }
+
+  public ConstraintDefinitionBuilder setOnDeleteAction(Action onDeleteAction) {
+    this.onDeleteAction = onDeleteAction;
+    return this;
+  }
+
+  public ConstraintDefinitionBuilder setOnUpdateAction(Action onUpdateAction) {
+    this.onUpdateAction = onUpdateAction;
+    return this;
+  }
+
+  public ConstraintDefinitionBuilder setReferenceColumn(String referenceColumn) {
+    this.referenceColumn = referenceColumn;
+    return this;
+  }
+
+  public ConstraintDefinitionBuilder setReferenceTable(String referenceTable) {
+    this.referenceTable = referenceTable;
+    return this;
   }
 
   public ConstraintDefinitionBuilder setType(Constraints type) {
@@ -72,35 +100,38 @@ public class ConstraintDefinitionBuilder {
   }
 
   private void validate() throws MappingException {
-    DefinitionUtils.notEmpty(name, "Constraint's  name is empty");
-    DefinitionUtils.notNull(type, "Constraint's type cannot be null");
+    if (!columnConstraint) {
+      notEmpty(name, "Constraint's  name is empty");
+    }
+    notNull(type, "Constraint's type cannot be null");
     switch (type) {
       case CHECK:
-        DefinitionUtils.notEmpty(exp, "Check expression cannot be empty");
+        notEmpty(exp, "Check expression cannot be empty");
         break;
       case COLLATE:
-        DefinitionUtils.notEmpty(exp, "Collation name cannot be empty");
+        notEmpty(exp, "Collation name cannot be empty");
         break;
       case DEFAULT:
-        DefinitionUtils.notEmpty(exp, "Default value cannot be empty");
+        notEmpty(exp, "Default value cannot be empty");
         break;
       case PRIMARY_KEY:
         if (!columnConstraint) {
-          DefinitionUtils.notNull(columnNames, "Primary key columns cannot be null");
+          notNull(columnNames, "Primary key columns cannot be null");
         }
-        DefinitionUtils.notNull(conflictClause, "Primary key on conflict clause cannot be null");
+        notNull(conflictClause, "Primary key on conflict clause cannot be null");
         break;
       case UNIQUE:
         if (!columnConstraint) {
-          DefinitionUtils.notNull(columnNames, "Unique columns cannot be null");
+          notNull(columnNames, "Unique columns cannot be null");
         }
-        DefinitionUtils.notNull(conflictClause, "Unique on conflict clause cannot be null");
+        notNull(conflictClause, "Unique on conflict clause cannot be null");
         break;
       case NOT_NULL:
-        DefinitionUtils.notNull(conflictClause, "Not null on conflict clause cannot be null");
+        notNull(conflictClause, "Not null on conflict clause cannot be null");
         break;
-      case FOREIGN_KEY:
-        // FIXME
+      case REFERENCES:
+        notEmpty(referenceTable, "references table's name cannot be empty");
+        notEmpty(referenceColumn, "references column's name cannot be empty");
         break;
       default:
         throw new IllegalArgumentException("unhandled type " + type);
@@ -150,14 +181,20 @@ public class ConstraintDefinitionBuilder {
           builder.appendWord(conflictClause.getSql());
         }
         break;
-      case FOREIGN_KEY:
-        if (!columnConstraint) {
-          builder.appendWord("FK_" + name.toUpperCase());
+      case REFERENCES:
+        if (columnConstraint) {
+          builder.appendWord(type.getSql());
+          builder.appendWord(referenceTable);
+          builder.appendBetweenBracket(referenceColumn);
+          if (onDeleteAction != null) {
+            builder.appendWord("ON DELETE");
+            builder.appendWord(onDeleteAction.getSql());
+          }
+          if (onUpdateAction != null) {
+            builder.appendWord("ON UPDATE");
+            builder.appendWord(onUpdateAction.getSql());
+          }
         }
-        builder.appendWord(type.getSql());
-        builder.openBracket();
-        builder.appendWithSeparator(columnNames, ',');
-        builder.closeBracket();
         // FIXME...
         break;
       case DEFAULT:

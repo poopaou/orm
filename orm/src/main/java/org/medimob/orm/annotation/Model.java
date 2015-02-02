@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Documented
 @Target(value = ElementType.TYPE)
 @Retention(value = RetentionPolicy.RUNTIME)
-public @interface Entity {
+public @interface Model {
 
   /**
    * By default the type's simple name is used.

@@ -9,7 +9,7 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
-import org.medimob.orm.Model;
+import org.medimob.orm.AbstractModel;
 import org.medimob.orm.internal.SqlUtils;
 import org.medimob.orm.internal.TypeUtils;
 import org.medimob.orm.processor.dll.IndexDefinition;
@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.processing.Filer;
-import javax.lang.model.element.TypeElement;
 
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
@@ -39,16 +38,6 @@ class TypeWriter {
   private static final String ID_COLUMN_FIELD = "ID_COLUMN";
   private static final String VERSION_COLUMN_FIELD = "VERSION_COLUMN";
   private static final String QUERY_COLUMNS_FIELD = "QUERY_COLUMNS";
-  //private static final String INSERT_COLUMNS_FIELD = "INSERT_COLUMNS";
-  //private static final String UPDATE_COLUMNS_FIELD = "UPDATE_COLUMNS";
-
-  public static final String[] CONSTRUCTOR_ARGS = new String[]{
-      TABLE_NAME_FIELD,
-      ID_COLUMN_FIELD, VERSION_COLUMN_FIELD,
-      QUERY_COLUMNS_FIELD,
-      //INSERT_COLUMNS_FIELD,
-      //UPDATE_COLUMNS_FIELD
-  };
 
   private final Filer filer;
 
@@ -91,11 +80,12 @@ class TypeWriter {
 
   }
 
-  public void writeType(TypeElement typeElement, TypeDefinition typeDefinition) throws IOException {
+  public void writeType(TypeDefinition typeDefinition) throws IOException {
     final String typeSimpleName = typeDefinition.getTypeSimpleName();
     final String packageName = typeDefinition.getPackageName();
     final String generatedClassName = typeSimpleName + EntityProcessor.CLASS_MODEL_SUFFIX;
 
+    ClassName typeClassName = ClassName.get(packageName, typeSimpleName);
     final PropertyDefinition idField = typeDefinition.getIdColumn();
     final PropertyDefinition versionField = typeDefinition.getVersionColumn();
 
@@ -126,7 +116,7 @@ class TypeWriter {
         .addJavadoc("AUTO GENERATED CLASS : DO NOT MODIFIED !!!")
         .addModifiers(PUBLIC, FINAL)
         .superclass(ParameterizedTypeName
-                        .get(ClassName.get(Model.class), ClassName.get(typeElement)));
+                        .get(ClassName.get(AbstractModel.class), typeClassName));
 
     // Field : 'TABLE_NAME'
     FieldSpec field = FieldSpec.builder(ClassName.get(String.class), TABLE_NAME_FIELD)
@@ -167,7 +157,9 @@ class TypeWriter {
     // Constructor
     MethodSpec method = MethodSpec.constructorBuilder()
         .addModifiers(PUBLIC)
-        .addStatement("super($L, $L, $L, $L)", CONSTRUCTOR_ARGS)
+        .addStatement("super($L, $L, $L, $L)", TABLE_NAME_FIELD,
+                      ID_COLUMN_FIELD, VERSION_COLUMN_FIELD,
+                      QUERY_COLUMNS_FIELD)
         .build();
     classBuilder.addMethod(method);
 
@@ -176,7 +168,7 @@ class TypeWriter {
         .addModifiers(PROTECTED)
         .addAnnotation(Override.class)
         .returns(TypeName.LONG)
-        .addParameter(ClassName.get(typeElement), "entity")
+        .addParameter(typeClassName, "entity")
         .addStatement("return entity.$L", idField.getFieldName())
         .build();
     classBuilder.addMethod(method);
@@ -187,7 +179,7 @@ class TypeWriter {
           .addModifiers(PROTECTED)
           .addAnnotation(Override.class)
           .returns(TypeName.LONG)
-          .addParameter(ClassName.get(typeElement), "entity")
+          .addParameter(typeClassName, "entity")
           .addStatement("return entity.$L", idField.getFieldName())
           .build();
       classBuilder.addMethod(method);
@@ -207,13 +199,13 @@ class TypeWriter {
     method = MethodSpec.methodBuilder("newInstance")
         .addModifiers(PROTECTED)
         .addAnnotation(Override.class)
-        .returns(ClassName.get(typeElement))
-        .addStatement("return new $T()", ClassName.get(typeElement))
+        .returns(typeClassName)
+        .addStatement("return new $T()", typeClassName)
         .build();
     classBuilder.addMethod(method);
 
     // Method : 'readEntity'
-    method = buildReadCursorMethod(typeElement, typeDefinition, queryCols);
+    method = buildReadCursorMethod(typeClassName, typeDefinition, queryCols);
     classBuilder.addMethod(method);
 
     method = MethodSpec.methodBuilder("getInsertStatement")
@@ -223,7 +215,7 @@ class TypeWriter {
         .addStatement("return $S", createSqlInsert(typeDefinition, insertCols))
         .build();
     classBuilder.addMethod(method);
-    classBuilder.addMethod(bindInsertMethod(typeElement, typeDefinition, insertCols));
+    classBuilder.addMethod(bindInsertMethod(typeClassName, typeDefinition, insertCols));
 
     method = MethodSpec.methodBuilder("getUpdateStatement")
         .addModifiers(PROTECTED)
@@ -232,7 +224,7 @@ class TypeWriter {
         .addStatement("return $S", createSqlUpdate(typeDefinition, updateCols))
         .build();
     classBuilder.addMethod(method);
-    classBuilder.addMethod(bindUpdateMethod(typeElement, typeDefinition, updateCols));
+    classBuilder.addMethod(bindUpdateMethod(typeClassName, typeDefinition, updateCols));
 
     method = MethodSpec.methodBuilder("getDeleteStatement")
         .addModifiers(PROTECTED)
@@ -241,7 +233,7 @@ class TypeWriter {
         .addStatement("return $S", createSqlDelete(typeDefinition))
         .build();
     classBuilder.addMethod(method);
-    classBuilder.addMethod(bindDeleteMethod(typeElement, typeDefinition));
+    classBuilder.addMethod(bindDeleteMethod(typeClassName, typeDefinition));
 
     // write java file.
     JavaFile.builder(packageName, classBuilder.build())
@@ -283,17 +275,16 @@ class TypeWriter {
     return builder.toString();
   }
 
-  private MethodSpec buildReadCursorMethod(TypeElement typeElement, TypeDefinition definition,
+  private MethodSpec buildReadCursorMethod(ClassName typeElement, TypeDefinition definition,
                                            List<String> queryCols) throws IOException {
 
     PropertyDefinition idColumn = definition.getIdColumn();
-    ClassName entityType = ClassName.get(typeElement);
     ClassName typeUtilType = ClassName.get(TypeUtils.class);
 
     MethodSpec.Builder builder = MethodSpec.methodBuilder("readCursor")
         .addModifiers(PROTECTED)
         .addAnnotation(Override.class)
-        .addParameter(entityType, "entity")
+        .addParameter(typeElement, "entity")
         .addParameter(ClassName.get("android.database", "Cursor"), "cursor")
         .addStatement("entity.$L = $T.getLong(cursor, $L)", idColumn.getFieldName(), typeUtilType,
                       queryCols.indexOf(idColumn.getColumnName()));
@@ -361,12 +352,12 @@ class TypeWriter {
     return builder.build();
   }
 
-  private MethodSpec bindInsertMethod(TypeElement element, TypeDefinition definition,
+  private MethodSpec bindInsertMethod(ClassName element, TypeDefinition definition,
                                       List<String> columns) throws IOException {
     return createBindMethod("bindInsert", element, definition, columns).build();
   }
 
-  private MethodSpec bindUpdateMethod(TypeElement typeElement, TypeDefinition definition,
+  private MethodSpec bindUpdateMethod(ClassName typeElement, TypeDefinition definition,
                                       List<String> columnNames) throws IOException {
 
     ClassName typeUtilType = ClassName.get(TypeUtils.class);
@@ -374,32 +365,32 @@ class TypeWriter {
         createBindMethod("bindUpdate", typeElement, definition, columnNames);
     // Bind id argument.
     builder.addStatement("$T.bind(statement, entity.$L, $L)", typeUtilType,
-                         definition.getIdColumn().getFieldName(), columnNames.size());
+                         definition.getIdColumn().getFieldName(), columnNames.size() + 1);
     // Bind Version argument if not null.
     if (definition.getVersionColumn() != null) {
       builder.addStatement("$T.bind(statement, entity.$L, $L)", typeUtilType,
-                           definition.getVersionColumn().getFieldName(), columnNames.size());
+                           definition.getVersionColumn().getFieldName(), columnNames.size() + 2);
     }
     return builder.build();
   }
 
-  private MethodSpec bindDeleteMethod(TypeElement element, TypeDefinition definition)
+  private MethodSpec bindDeleteMethod(ClassName element, TypeDefinition definition)
       throws IOException {
 
     ClassName typeUtilType = ClassName.get(TypeUtils.class);
     MethodSpec.Builder builder =
         createBindMethod("bindDelete", element, definition, null);
     // Bind id argument.
-    builder.addStatement("$T.bind(statement, entity.$L, 0)", typeUtilType,
+    builder.addStatement("$T.bind(statement, entity.$L, 1)", typeUtilType,
                          definition.getIdColumn().getFieldName());
     if (definition.getVersionColumn() != null) {
-      builder.addStatement("$T.bind(statement, entity.$L, 1)", typeUtilType,
+      builder.addStatement("$T.bind(statement, entity.$L, 2)", typeUtilType,
                            definition.getVersionColumn().getFieldName());
     }
     return builder.build();
   }
 
-  private MethodSpec.Builder createBindMethod(String methodName, TypeElement element,
+  private MethodSpec.Builder createBindMethod(String methodName, ClassName element,
                                               TypeDefinition definition,
                                               List<String> columnNames) throws IOException {
 
@@ -408,7 +399,7 @@ class TypeWriter {
         .addAnnotation(Override.class)
         .returns(TypeName.VOID)
         .addParameter(ClassName.get("android.database.sqlite", "SQLiteStatement"), "statement")
-        .addParameter(ClassName.get(element), "entity");
+        .addParameter(element, "entity");
 
     ClassName typeUtilType = ClassName.get(TypeUtils.class);
     if (columnNames != null) {

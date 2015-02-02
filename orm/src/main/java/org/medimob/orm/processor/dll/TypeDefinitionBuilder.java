@@ -16,9 +16,6 @@ public class TypeDefinitionBuilder {
   private String typeSimpleName;
   private String typeQualifiedName;
   private String packageName;
-  private String beforeInsertMethod;
-  private String beforeUpdateMethod;
-  private String beforeDeleteMethod;
   private boolean temporary;
   private String asStatement;
   private PropertyDefinition idColumn;
@@ -45,21 +42,6 @@ public class TypeDefinitionBuilder {
 
   public TypeDefinitionBuilder setPackageName(String packageName) {
     this.packageName = packageName;
-    return this;
-  }
-
-  public TypeDefinitionBuilder setBeforeInsertMethod(String beforeInsertMethod) {
-    this.beforeInsertMethod = beforeInsertMethod;
-    return this;
-  }
-
-  public TypeDefinitionBuilder setBeforeUpdateMethod(String beforeUpdateMethod) {
-    this.beforeUpdateMethod = beforeUpdateMethod;
-    return this;
-  }
-
-  public TypeDefinitionBuilder setBeforeDeleteMethod(String beforeDeleteMethod) {
-    this.beforeDeleteMethod = beforeDeleteMethod;
     return this;
   }
 
@@ -143,9 +125,7 @@ public class TypeDefinitionBuilder {
   public TypeDefinition build() throws MappingException {
     validate();
     return new TypeDefinition(tableName, typeSimpleName, typeQualifiedName, packageName,
-                              beforeInsertMethod,
-                              beforeUpdateMethod, beforeDeleteMethod, idColumn, versionColumn,
-                              createStatement(),
+                              idColumn, versionColumn, createStatement(),
                               columns.toArray(new PropertyDefinition[columns.size()]),
                               constraintDefinitions
                                   .toArray(new ConstraintDefinition[constraintDefinitions.size()]),

@@ -12,7 +12,7 @@ import java.lang.annotation.Target;
 @Documented
 @Target(value = ElementType.FIELD)
 @Retention(value = RetentionPolicy.RUNTIME)
-public @interface Column {
+public @interface Property {
 
   /**
    * Column's name. if not set the field name will be used.

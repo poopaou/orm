@@ -1,8 +1,7 @@
 package org.medimob.orm.processor.dll;
 
 /**
- * Column or Table constraint definition.
- * Created by Poopaou on 21/01/2015.
+ * Column or Table constraint definition. Created by Poopaou on 21/01/2015.
  */
 public final class ConstraintDefinition {
 
@@ -29,23 +28,23 @@ public final class ConstraintDefinition {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
+  public boolean equals(Object o) {
+    if (this == o) {
       return true;
     }
-    if (obj == null || getClass() != obj.getClass()) {
+    if (o == null || getClass() != o.getClass()) {
       return false;
     }
 
-    ConstraintDefinition that = (ConstraintDefinition) obj;
+    ConstraintDefinition that = (ConstraintDefinition) o;
 
-    return name.equalsIgnoreCase(that.name) && type == that.type;
+    return !(name != null ? !name.equals(that.name) : that.name != null) && type == that.type;
   }
 
   @Override
   public int hashCode() {
     int result = type.hashCode();
-    result = 31 * result + name.hashCode();
+    result = 31 * result + (name != null ? name.hashCode() : 0);
     return result;
   }
 }

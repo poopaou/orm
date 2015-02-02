@@ -11,17 +11,17 @@ It also comes with some db optimisations like prepared statements, caching, Hibe
 
 ## Usage
 
-Begin by Annotate your class with `@Entity` than define properties with `@Column`. 
+Begin by Annotate your class with `@Model` than define properties with `@Property`. 
 
 Example :
 ```
-@Entity
+@Model
 public class Castle {
     
     @Id
     long id;
     
-    @Column
+    @Property
     String name;
     
     // required by basic orm

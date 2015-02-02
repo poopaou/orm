@@ -16,10 +16,9 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Entity model. 
- * Created by Poopaou on 23/01/2015.
+ * Entity model. Created by Poopaou on 23/01/2015.
  */
-public abstract class Model<T> {
+public abstract class AbstractModel<T> {
 
   private final Session<T> session;
   // Statements locks :
@@ -45,7 +44,8 @@ public abstract class Model<T> {
   private SQLiteStatement deleteByIdStatement;
   private OpenHelper helper;
 
-  protected Model(String tableName, String idColumn, String versionColumn, String[] queryColumns) {
+  protected AbstractModel(String tableName, String idColumn, String versionColumn,
+                          String[] queryColumns) {
     this.tableName = tableName;
     this.idColumn = idColumn;
     this.idSelection = idColumn + "=?";
@@ -405,11 +405,11 @@ public abstract class Model<T> {
     }
 
     bindUpdate(updateStatement, entity);
-    if (updateStatement.executeUpdateDelete() == 1) {
-      session.remove(getId(entity));
-      return true;
+    if (updateStatement.executeUpdateDelete() == 0) {
+      throw new OrmException("Wrong id or model version, cannot update");
     }
-    return false;
+    session.remove(getId(entity));
+    return true;
   }
 
   /**

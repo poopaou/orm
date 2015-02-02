@@ -28,12 +28,12 @@ public final class Orm {
   private static final Object LOCK = new Object();
   private static Orm orm;
   private OpenHelper helper;
-  private Map<Class<?>, Model<?>> modelMap;
+  private Map<Class<?>, AbstractModel<?>> modelMap;
 
   private Orm(Context context) throws NameNotFoundException, IOException,
                                       ClassNotFoundException, IllegalAccessException,
                                       InstantiationException {
-    modelMap = new HashMap<Class<?>, Model<?>>();
+    modelMap = new HashMap<Class<?>, AbstractModel<?>>();
     InputStream is = getClass().getClassLoader()
         .getResourceAsStream(EntityProcessor.ENTITY_LIST_FILE_PATH);
 
@@ -42,7 +42,7 @@ public final class Orm {
     while ((line = reader.readLine()) != null) {
       Class<?> dataClazz = Class.forName(line);
       Class<?> modelClazz = Class.forName(line + EntityProcessor.CLASS_MODEL_SUFFIX);
-      Model<?> model = (Model<?>) modelClazz.newInstance();
+      AbstractModel<?> model = (AbstractModel<?>) modelClazz.newInstance();
       modelMap.put(dataClazz, model);
     }
 
@@ -86,7 +86,7 @@ public final class Orm {
    */
   public <T> T rawQuerySingle(@NonNull Class<T> clazz, @NonNull String selection,
                               @Nullable String[] selectionArg) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.rawQuerySingle(selection, selectionArg);
   }
 
@@ -102,7 +102,7 @@ public final class Orm {
    */
   public <T> T rawQuerySingle(@NonNull Class<T> clazz, @NonNull String selection,
                               @Nullable String[] selectionArg, @Nullable String having) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.rawQuerySingle(selection, selectionArg, having);
   }
 
@@ -120,7 +120,7 @@ public final class Orm {
   public <T> List<T> rawQuery(@NonNull Class<T> clazz, @NonNull String selection,
                               @Nullable String[] selectionArg, @Nullable String orderBy,
                               @Nullable String limit) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.rawQuery(selection, selectionArg, orderBy, limit);
   }
 
@@ -141,7 +141,7 @@ public final class Orm {
                               @Nullable String[] selectionArg, @Nullable String groupBy,
                               @Nullable String having, @Nullable String orderBy,
                               @Nullable String limit) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.rawQuery(selection, selectionArg, groupBy, having,
                           orderBy, limit);
   }
@@ -155,7 +155,7 @@ public final class Orm {
    * @return entity or null if not found.
    */
   public <T> T loadById(@NonNull Class<T> clazz, long id) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.loadById(id);
   }
 
@@ -168,7 +168,7 @@ public final class Orm {
    * @return entities ids.
    */
   public <T> long[] insertInTx(@NonNull Class<T> clazz, @NonNull T... entities) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.insertInTx(entities);
   }
 
@@ -181,7 +181,7 @@ public final class Orm {
    * @return entities ids.
    */
   public <T> long[] insertInTx(@NonNull Class<T> clazz, @NonNull Iterable<T> entities) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.insertInTx(entities);
   }
 
@@ -194,7 +194,7 @@ public final class Orm {
    * @return entity ids.
    */
   public <T> long insertInTx(@NonNull Class<T> clazz, @NonNull T entity) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.insertInTx(entity);
   }
 
@@ -207,7 +207,7 @@ public final class Orm {
    * @return entity ids.
    */
   public <T> long insert(@NonNull Class<T> clazz, @NonNull T entity) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.insert(entity);
   }
 
@@ -220,7 +220,7 @@ public final class Orm {
    * @return update count.
    */
   public <T> int updateInTx(@NonNull Class<T> clazz, @NonNull T... entities) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.updateInTx(entities);
   }
 
@@ -233,7 +233,7 @@ public final class Orm {
    * @return update count.
    */
   public <T> int updateInTx(@NonNull Class<T> clazz, @NonNull Iterable<T> entities) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.updateInTx(entities);
   }
 
@@ -246,7 +246,7 @@ public final class Orm {
    * @return true if entity has been updated.
    */
   public <T> boolean updateInTx(@NonNull Class<T> clazz, T entity) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.updateInTx(helper.getWritableDatabase(), entity);
   }
 
@@ -259,7 +259,7 @@ public final class Orm {
    * @return true if entity has been updated.
    */
   public <T> boolean update(@NonNull Class<T> clazz, @NonNull T entity) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.update(entity);
   }
 
@@ -272,7 +272,7 @@ public final class Orm {
    * @return delete count.
    */
   public <T> int deleteById(@NonNull Class<T> clazz, @NonNull long... ids) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.deleteById(ids);
   }
 
@@ -285,7 +285,7 @@ public final class Orm {
    * @return delete count.
    */
   public <T> int deleteByIdInTx(@NonNull Class<T> clazz, @NonNull long... ids) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.deleteByIdInTx(ids);
   }
 
@@ -298,7 +298,7 @@ public final class Orm {
    * @return delete count.
    */
   public <T> int deleteInTx(@NonNull Class<T> clazz, @NonNull T... entities) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.deleteInTx(entities);
   }
 
@@ -311,7 +311,7 @@ public final class Orm {
    * @return delete count.
    */
   public <T> int deleteInTx(@NonNull Class<T> clazz, @NonNull Iterable<T> entities) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.deleteInTx(entities);
   }
 
@@ -324,7 +324,7 @@ public final class Orm {
    * @return true if entity has been deleted.
    */
   public <T> boolean deleteInTx(@NonNull Class<T> clazz, @NonNull T entity) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.deleteInTx(entity);
   }
 
@@ -337,18 +337,18 @@ public final class Orm {
    * @return true if entity has been deleted.
    */
   public <T> boolean delete(@NonNull Class<T> clazz, @NonNull T entity) {
-    Model<T> model = getModelInstanceOrThrow(clazz);
+    AbstractModel<T> model = getModelInstanceOrThrow(clazz);
     return model.deleteInTx(entity);
   }
 
-  public <T> Model<T> getRepository(Class<T> clazz) {
+  public <T> AbstractModel<T> getRepository(Class<T> clazz) {
     return getModelInstanceOrThrow(clazz);
   }
 
   @NonNull
   @SuppressWarnings("unchecked")
-  private <T> Model<T> getModelInstanceOrThrow(Class<T> clazz) {
-    Model<T> model = (Model<T>) modelMap.get(clazz);
+  private <T> AbstractModel<T> getModelInstanceOrThrow(Class<T> clazz) {
+    AbstractModel<T> model = (AbstractModel<T>) modelMap.get(clazz);
     if (model == null) {
       throw new IllegalStateException(clazz.getCanonicalName() + " is not a registered entity");
     }

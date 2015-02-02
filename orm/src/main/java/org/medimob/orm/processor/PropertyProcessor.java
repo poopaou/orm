@@ -1,20 +1,21 @@
 package org.medimob.orm.processor;
 
-import org.medimob.orm.annotation.Check;
-import org.medimob.orm.annotation.Column;
 import org.medimob.orm.annotation.Conflict;
-import org.medimob.orm.annotation.Entity;
 import org.medimob.orm.annotation.Id;
 import org.medimob.orm.annotation.Index;
+import org.medimob.orm.annotation.Model;
 import org.medimob.orm.annotation.NotNull;
+import org.medimob.orm.annotation.Property;
+import org.medimob.orm.annotation.Reference;
 import org.medimob.orm.annotation.Unique;
 import org.medimob.orm.annotation.Version;
-import org.medimob.orm.processor.dll.ConstraintDefinitionBuilder;
+import org.medimob.orm.processor.dll.ConstraintDefinition;
 import org.medimob.orm.processor.dll.Constraints;
 import org.medimob.orm.processor.dll.IndexDefinition;
 import org.medimob.orm.processor.dll.IndexDefinitionBuilder;
 import org.medimob.orm.processor.dll.PropertyDefinition;
 import org.medimob.orm.processor.dll.PropertyDefinitionBuilder;
+import org.medimob.orm.processor.dll.TypeDefinition;
 import org.medimob.orm.processor.dll.TypeDefinitionBuilder;
 
 import java.util.Collections;
@@ -24,29 +25,42 @@ import java.util.Map;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.MirroredTypeException;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
 
 import static org.medimob.orm.processor.ProcessorUtils.resolveColumnName;
-import static org.medimob.orm.processor.ProcessorUtils.resolveUniqueName;
 import static org.medimob.orm.processor.ProcessorUtils.typeToString;
+import static org.medimob.orm.processor.dll.ConstraintDefinitionBuilder.newColumnConstraint;
 
 /**
- * Propetry processor.
+ * Property processor.
  *
  * Created by Poopaou on 18/01/2015.
  */
 class PropertyProcessor {
 
+  private EntityProcessor entityProcessor;
   private Types typeUtils;
   private Map<PropertyType, String> typeMirrorLookup;
 
-  public PropertyProcessor(ProcessingEnvironment processingEnv) {
+  public PropertyProcessor(ProcessingEnvironment processingEnv, EntityProcessor entityProcessor) {
     this.typeUtils = processingEnv.getTypeUtils();
+    this.entityProcessor = entityProcessor;
     initTypeLookup();
+  }
+
+  private static TypeMirror getClassTypeMirror(Reference annotation) {
+    try {
+      annotation.model(); // this should throw
+    } catch (MirroredTypeException mte) {
+      return mte.getTypeMirror();
+    }
+    return null; // can this ever happen ??
   }
 
   private void initTypeLookup() {
@@ -82,8 +96,9 @@ class PropertyProcessor {
       processId(element, typeDefinitionBuilder, element.getAnnotation(Id.class));
     } else if (element.getAnnotation(Version.class) != null) {
       processVersion(element, typeDefinitionBuilder, element.getAnnotation(Version.class));
-    } else if (element.getAnnotation(Column.class) != null) {
-      processColumn(element, typeDefinitionBuilder, tableName, element.getAnnotation(Column.class));
+    } else if (element.getAnnotation(Property.class) != null) {
+      processProperty(element, typeDefinitionBuilder, tableName,
+                      element.getAnnotation(Property.class));
     }
   }
 
@@ -100,7 +115,7 @@ class PropertyProcessor {
         .setFieldName(element.getSimpleName().toString())
         .setPropertyType(getFieldType(element))
         .addConstraints(
-            ConstraintDefinitionBuilder.newColumnConstraint()
+            newColumnConstraint()
                 .setType(Constraints.PRIMARY_KEY)
                 .setName(id.name())
                 .setAutoincrement(id.autoIncrement())
@@ -125,12 +140,12 @@ class PropertyProcessor {
         .setColumnName(version.name())
         .setFieldName(element.getSimpleName().toString())
         .setPropertyType(getFieldType(element))
-        .addConstraints(ConstraintDefinitionBuilder.newColumnConstraint()
+        .addConstraints(newColumnConstraint()
                             .setType(Constraints.DEFAULT)
                             .setName(version.name())
                             .setExp("0")
                             .build())
-        .addConstraints(ConstraintDefinitionBuilder.newColumnConstraint()
+        .addConstraints(newColumnConstraint()
                             .setType(Constraints.NOT_NULL)
                             .setName(version.name())
                             .setConflictClause(Conflict.ROLLBACK)
@@ -140,20 +155,20 @@ class PropertyProcessor {
     tableBuilder.setVersionColumn(versionPropertyDefinition);
   }
 
-  protected void processColumn(VariableElement element,
-                               TypeDefinitionBuilder tableBuilder,
-                               String tableName, Column column) throws MappingException {
+  protected void processProperty(VariableElement element,
+                                 TypeDefinitionBuilder tableBuilder,
+                                 String tableName, Property property) throws MappingException {
     // Resolve column name, by default if
     // no name is provided on the @Entity annotation
     // the column's name is equal to the property's
     // name.
-    final String columnName = resolveColumnName(element, column);
+    final String columnName = resolveColumnName(element, property);
 
     PropertyDefinitionBuilder columnBuilder = new PropertyDefinitionBuilder()
         .setColumnName(columnName)
         .setFieldName(element.getSimpleName().toString())
-        .setInsertable(column.insertable())
-        .setUpdateable(column.updatable());
+        .setInsertable(property.insertable())
+        .setUpdateable(property.updatable());
 
     // Resolve type for basic types
     PropertyType type = getFieldType(element);
@@ -161,7 +176,7 @@ class PropertyProcessor {
       // Field type is not a 'basic' type :
       // Look for relationship like (oneToMany ManyToMany... etc).
       Element foreign = typeUtils.asElement(element.asType());
-      if (foreign.getAnnotation(Entity.class) == null) {
+      if (foreign.getAnnotation(Model.class) == null) {
         throw new MappingException("");
       }
     } else {
@@ -172,64 +187,85 @@ class PropertyProcessor {
       columnBuilder.setPropertyType(getFieldType(element));
       if (type == PropertyType.DATE_STRING) {
         columnBuilder.setPropertyType(PropertyType.DATE_STRING);
-        columnBuilder.setDateFormat(column.dateFormat());
+        columnBuilder.setDateFormat(property.dateFormat());
       }
     }
 
     // Process columns constraints.
-    processDefault(columnName, columnBuilder, column);
-    processCollate(columnName, columnBuilder, column);
-    processUnique(columnName, columnBuilder, column, element.getAnnotation(Unique.class));
-    processNotNull(columnName, columnBuilder, column, element.getAnnotation(NotNull.class));
-    processCheck(columnName, columnBuilder, column, element.getAnnotation(Check.class));
-    processIndexed(columnName, tableBuilder, tableName, column, element.getAnnotation(Index.class));
+    processDefault(columnBuilder, property);
+    processCollate(columnBuilder, property);
+    processCheck(columnBuilder, property);
+    processReference(columnBuilder, element);
+    processUnique(columnBuilder, property, element.getAnnotation(Unique.class));
+    processNotNull(columnBuilder, property, element.getAnnotation(NotNull.class));
 
+    processIndexed(columnName, tableBuilder, tableName, property,
+                   element.getAnnotation(Index.class));
     // Add column to the table model.
     tableBuilder.addColumn(columnBuilder.build());
   }
 
-  protected void processUnique(String columnName,
-                               PropertyDefinitionBuilder builder, Column column,
+  private void processReference(PropertyDefinitionBuilder columnBuilder,
+                                VariableElement element) throws MappingException {
+    if (element.getAnnotation(Reference.class) == null) {
+      return;
+    }
+
+    // Check property type (only long is supported).
+    if (PropertyType.LONG != getFieldType(element)) {
+      throw new MappingException("Reference property must be of type long");
+    }
+
+    Reference annotation = element.getAnnotation(Reference.class);
+    TypeElement reference = (TypeElement) typeUtils.asElement(getClassTypeMirror(annotation));
+    TypeDefinition typeDefinition = entityProcessor.getTypeDefinition(reference);
+
+    ConstraintDefinition constraint = newColumnConstraint()
+        .setType(Constraints.REFERENCES)
+        .setReferenceTable(typeDefinition.getTableName())
+        .setReferenceColumn(typeDefinition.getIdColumn().getColumnName())
+        .setOnDeleteAction(annotation.onDelete())
+        .setOnUpdateAction(annotation.onUpdate())
+        .build();
+
+    columnBuilder.addConstraints(constraint);
+  }
+
+  protected void processUnique(PropertyDefinitionBuilder builder, Property property,
                                Unique unique) throws MappingException {
-    if (unique == null && column.unique()) {
-      builder.addConstraints(ConstraintDefinitionBuilder.newColumnConstraint()
+    if (unique == null && property.unique()) {
+      builder.addConstraints(newColumnConstraint()
                                  .setType(Constraints.UNIQUE)
-                                 .setName(columnName)
                                  .setConflictClause(Conflict.ROLLBACK)
                                  .build());
     } else if (unique != null) {
-      builder.addConstraints(ConstraintDefinitionBuilder.newColumnConstraint()
+      builder.addConstraints(newColumnConstraint()
                                  .setType(Constraints.UNIQUE)
-                                 .setName(resolveUniqueName(unique, columnName))
                                  .setConflictClause(unique.onConflict())
                                  .build());
     }
   }
 
-  protected void processNotNull(String columnName,
-                                PropertyDefinitionBuilder builder,
-                                Column column, NotNull notNull)
-      throws MappingException {
+  protected void processNotNull(PropertyDefinitionBuilder builder, Property property,
+                                NotNull notNull) throws MappingException {
 
-    if (notNull == null && column.notNull()) {
-      builder.addConstraints(ConstraintDefinitionBuilder.newColumnConstraint()
+    if (notNull == null && property.notNull()) {
+      builder.addConstraints(newColumnConstraint()
                                  .setType(Constraints.NOT_NULL)
-                                 .setName(columnName)
                                  .setConflictClause(Conflict.ROLLBACK)
                                  .build());
     } else if (notNull != null) {
-      builder.addConstraints(ConstraintDefinitionBuilder.newColumnConstraint()
+      builder.addConstraints(newColumnConstraint()
                                  .setType(Constraints.NOT_NULL)
-                                 .setName(columnName)
                                  .setConflictClause(notNull.onConflict())
                                  .build());
     }
   }
 
   protected void processIndexed(String columnName, TypeDefinitionBuilder tableBuilder,
-                                String tableName, Column column,
+                                String tableName, Property property,
                                 Index index) throws MappingException {
-    if (index == null && column.indexed()) {
+    if (index == null && property.indexed()) {
       IndexDefinition indexDefinition = new IndexDefinitionBuilder()
           .setName(columnName)
           .setTableName(tableName)
@@ -249,42 +285,32 @@ class PropertyProcessor {
     }
   }
 
-  protected void processCheck(String columnName, PropertyDefinitionBuilder builder,
-                              Column column,
-                              Check check) throws MappingException {
-    if (check == null && !"".equals(column.check())) {
-      builder.addConstraints(ConstraintDefinitionBuilder.newColumnConstraint()
+  protected void processCheck(PropertyDefinitionBuilder builder, Property property)
+      throws MappingException {
+    if (!"".equals(property.check())) {
+      builder.addConstraints(newColumnConstraint()
                                  .setType(Constraints.CHECK)
-                                 .setName(columnName)
-                                 .setExp(column.check())
-                                 .build());
-    } else if (check != null) {
-      builder.addConstraints(ConstraintDefinitionBuilder.newColumnConstraint()
-                                 .setType(Constraints.CHECK)
-                                 .setName(columnName)
-                                 .setExp(check.exp())
+                                 .setExp(property.check())
                                  .build());
     }
   }
 
-  protected void processDefault(String columnName, PropertyDefinitionBuilder builder, Column column)
+  protected void processDefault(PropertyDefinitionBuilder builder, Property property)
       throws MappingException {
-    if (!"".equals(column.defaultValue())) {
-      builder.addConstraints(ConstraintDefinitionBuilder.newColumnConstraint()
+    if (!"".equals(property.defaultValue())) {
+      builder.addConstraints(newColumnConstraint()
                                  .setType(Constraints.DEFAULT)
-                                 .setName(columnName)
-                                 .setExp(column.defaultValue())
+                                 .setExp(property.defaultValue())
                                  .build());
     }
   }
 
-  protected void processCollate(String columnName, PropertyDefinitionBuilder builder, Column column)
+  protected void processCollate(PropertyDefinitionBuilder builder, Property property)
       throws MappingException {
-    if (!"".equals(column.collate())) {
-      builder.addConstraints(ConstraintDefinitionBuilder.newColumnConstraint()
+    if (!"".equals(property.collate())) {
+      builder.addConstraints(newColumnConstraint()
                                  .setType(Constraints.COLLATE)
-                                 .setName(columnName)
-                                 .setExp(column.collate())
+                                 .setExp(property.collate())
                                  .build());
     }
   }

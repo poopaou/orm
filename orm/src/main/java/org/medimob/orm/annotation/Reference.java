@@ -7,15 +7,17 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Table check constraint.
- * Created by Poopaou on 02/02/2015.
+ * Column Reference constraint. Created by Poopaou on 02/02/2015.
  */
 @Documented
-@Target(value = ElementType.TYPE)
+@Target(value = ElementType.FIELD)
 @Retention(value = RetentionPolicy.RUNTIME)
-public @interface Check {
+public @interface Reference {
 
-  String name();
+  Class<?> model();
 
-  String exp();
+  Action onUpdate() default Action.NO_ACTION;
+
+  Action onDelete() default Action.NO_ACTION;
+
 }

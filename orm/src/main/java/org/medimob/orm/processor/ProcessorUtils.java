@@ -2,9 +2,9 @@ package org.medimob.orm.processor;
 
 import android.support.annotation.NonNull;
 
-import org.medimob.orm.annotation.Column;
-import org.medimob.orm.annotation.Entity;
 import org.medimob.orm.annotation.Index;
+import org.medimob.orm.annotation.Model;
+import org.medimob.orm.annotation.Property;
 import org.medimob.orm.annotation.Unique;
 
 import java.util.List;
@@ -24,6 +24,7 @@ import javax.lang.model.type.TypeVariable;
 import javax.lang.model.util.SimpleTypeVisitor6;
 
 /**
+ * Commons processor utils.
  * Created by Poopaou on 19/01/2015.
  */
 public final class ProcessorUtils {
@@ -35,15 +36,15 @@ public final class ProcessorUtils {
    * Revolve table name.
    *
    * @param element type.
-   * @param entity  entity.
+   * @param model   entity.
    * @return table's name.
    */
-  public static String resolveTableName(@NonNull TypeElement element, @NonNull Entity entity) {
+  public static String resolveTableName(@NonNull TypeElement element, @NonNull Model model) {
     final String tableName;
-    if ("".equals(entity.name())) {
+    if ("".equals(model.name())) {
       tableName = element.getSimpleName().toString();
     } else {
-      tableName = entity.name().toUpperCase();
+      tableName = model.name().toUpperCase();
     }
     return tableName;
   }
@@ -55,7 +56,8 @@ public final class ProcessorUtils {
    * @param column  column.
    * @return column's name.
    */
-  public static String resolveColumnName(@NonNull VariableElement element, @NonNull Column column) {
+  public static String resolveColumnName(@NonNull VariableElement element,
+                                         @NonNull Property column) {
     final String columnName;
     String property = element.getSimpleName().toString();
     if ("".equals(column.name())) {

@@ -4,8 +4,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 /**
- * Sql statements helper.
- * Created by Poopaou on 20/01/2015.
+ * Sql statements helper. Created by Poopaou on 20/01/2015.
  */
 public final class SqlUtils {
 
@@ -14,9 +13,10 @@ public final class SqlUtils {
 
   /**
    * Create sql delete.
+   *
    * @param tableName table's name.
-   * @param id the id columns.
-   * @param version the version column
+   * @param id        the id columns.
+   * @param version   the version column
    * @return sql statement.
    */
   @NonNull
@@ -24,23 +24,21 @@ public final class SqlUtils {
                                        @Nullable String version) {
     StringBuilder builder = new StringBuilder("DELETE FROM ");
     builder.append(tableName);
-    String[] selection;
-    if (version != null) {
-      selection = new String[]{id, version};
-    } else {
-      selection = new String[]{id};
-    }
     builder.append(" WHERE ");
-    appendColumnsEqValue(builder, tableName, selection);
+    builder.append(id).append("=?");
+    if (version != null) {
+      builder.append(" AND ");
+      builder.append(version);
+      builder.append("=?");
+    }
     return builder.toString();
   }
 
   /**
-   * Create sql insert. 
-   * If version field is present is automatically initialize with '0' value.
+   * Create sql insert. If version field is present is automatically initialize with '0' value.
    * Version field cannot be binned.
    *
-   * Bind parameter number is equals to the columns size. 
+   * Bind parameter number is equals to the columns size.
    *
    * @param tableName table's name.
    * @param columns   inserted columns.
@@ -69,8 +67,7 @@ public final class SqlUtils {
   /**
    * Create sql update.
    *
-   * Id and version columns are always the last two statement's parameters.
-   * Version can be null. 
+   * Id and version columns are always the last two statement's parameters. Version can be null.
    *
    * @param tableName     table's name.
    * @param updateColumns update columns.
@@ -96,7 +93,7 @@ public final class SqlUtils {
     builder.append(id);
     builder.append("=?");
     if (version != null) {
-      builder.append(',');
+      builder.append(" AND ");
       builder.append(version);
       builder.append("=?");
     }
@@ -114,32 +111,16 @@ public final class SqlUtils {
     return builder;
   }
 
-  private static StringBuilder appendColumnsEqValue(StringBuilder builder, String tableAlias,
-                                                    String[] columns) {
-    for (int i = 0; i < columns.length; i++) {
-      appendColumn(builder, tableAlias, columns[i]).append("=?");
-      if (i < columns.length - 1) {
-        builder.append(',');
-      }
-    }
-    return builder;
-  }
-
-  private static StringBuilder appendColumn(StringBuilder builder, String tableAlias,
-                                            String column) {
-    builder.append(tableAlias).append(".'").append(column).append('\'');
-    return builder;
-  }
 
   private static StringBuilder appendColumn(StringBuilder builder, String column) {
-    builder.append('\'').append(column).append('\'');
+    builder.append(column);
     return builder;
   }
 
   private static void appendColumns(StringBuilder builder, String[] columns) {
     int length = columns.length;
     for (int i = 0; i < length; i++) {
-      builder.append('\'').append(columns[i]).append('\'');
+      builder.append(columns[i]);
       if (i < length - 1) {
         builder.append(',');
       }

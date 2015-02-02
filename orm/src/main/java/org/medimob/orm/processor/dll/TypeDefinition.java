@@ -12,9 +12,6 @@ public final class TypeDefinition {
   private final String typeQualifiedName;
   private final String packageName;
 
-  private final String beforeInsertMethod;
-  private final String beforeUpdateMethod;
-  private final String beforeDeleteMethod;
   // Properties
   private final PropertyDefinition idColumn;
   private final PropertyDefinition versionColumn;
@@ -27,9 +24,8 @@ public final class TypeDefinition {
 
   TypeDefinition(String tableName, String typeSimpleName,
                  String typeQualifiedName,
-                 String packageName, String beforeInsertMethod,
-                 String beforeUpdateMethod,
-                 String beforeDeleteMethod, PropertyDefinition idColumn,
+                 String packageName,
+                 PropertyDefinition idColumn,
                  PropertyDefinition versionColumn, String statement,
                  PropertyDefinition[] properties,
                  ConstraintDefinition[] constraintDefinitions,
@@ -39,9 +35,6 @@ public final class TypeDefinition {
     this.typeSimpleName = typeSimpleName;
     this.typeQualifiedName = typeQualifiedName;
     this.packageName = packageName;
-    this.beforeInsertMethod = beforeInsertMethod;
-    this.beforeUpdateMethod = beforeUpdateMethod;
-    this.beforeDeleteMethod = beforeDeleteMethod;
     this.statement = statement;
     this.idColumn = idColumn;
     this.versionColumn = versionColumn;
@@ -77,18 +70,6 @@ public final class TypeDefinition {
 
   public String getPackageName() {
     return packageName;
-  }
-
-  public String getBeforeInsertMethod() {
-    return beforeInsertMethod;
-  }
-
-  public String getBeforeUpdateMethod() {
-    return beforeUpdateMethod;
-  }
-
-  public String getBeforeDeleteMethod() {
-    return beforeDeleteMethod;
   }
 
   public PropertyDefinition getIdColumn() {
@@ -130,9 +111,7 @@ public final class TypeDefinition {
   public String toString() {
     return "TypeMeta{" + "tableName='" + tableName + '\'' + ", typeSimpleName='" + typeSimpleName
            + '\'' + ", typeQualifiedName='" + typeQualifiedName + '\'' + ", packageName='"
-           + packageName + '\'' + ", beforeInsertMethod='" + beforeInsertMethod + '\''
-           + ", beforeUpdateMethod='" + beforeUpdateMethod + '\'' + ", beforeDeleteMethod='"
-           + beforeDeleteMethod + '\'' + ", idColumn=" + idColumn + ", statement='" + statement
+           + packageName + '\'' + ", idColumn=" + idColumn + ", statement='" + statement
            + '\'' + '}';
   }
 }

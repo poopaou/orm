@@ -1,7 +1,7 @@
 package org.medimob.orm.processor.dll;
 
 /**
- * Created by Poopaou on 17/01/2015.
+ * Table and columns constraint. Created by Poopaou on 17/01/2015.
  */
 public enum Constraints {
   UNIQUE("UNIQUE", true, true),
@@ -10,7 +10,7 @@ public enum Constraints {
   NOT_NULL("NOT NULL", false, true),
   DEFAULT("DEFAULT", false, true),
   COLLATE("COLLATE", false, true),
-  FOREIGN_KEY("FOREIGN KEY", true, false);
+  REFERENCES("REFERENCES", false, true);
 
   private final String sql;
   private final boolean forTable;

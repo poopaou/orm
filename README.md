@@ -35,7 +35,7 @@ public class Castle {
 ```
 
 Declare in your `AndroidManifest.xml` file the database name :
-```
+```java
 ...
    <application>
         ...

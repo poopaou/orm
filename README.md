@@ -51,9 +51,7 @@ Get orm instance :
 Orm.getInstance(context);
 ```
 
-**That's it.**
-
-##### CRUD operation
+and **That's it.**
 
 ```
 // Get orm instance.
@@ -78,7 +76,7 @@ orm.deleteInTx(Castle.class, castle);
 
 Field type must be one of : 
 * Primitives  (`boolean`, `long`, `double`, `int`, `float`, `short`, `byte`, `char`, `short`)
-* Object wrapper (`Integer`, `Boolean`...)
+* Primitives wrapper (`Integer`, `Boolean`...)
 * `String` or `java.util.Date`
 * `byte[]`
 

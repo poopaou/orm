@@ -45,12 +45,7 @@ Declare in your `AndroidManifest.xml` file the database name :
 ...
 ```
 
-Get orm instance :
-```
-Orm.getInstance(context);
-```
-
-and **That's it.**
+Use :
 
 ```
 // Get orm instance.
@@ -70,6 +65,8 @@ orm.updateInTx(Castle.class, foo);
 // Delete.
 orm.deleteInTx(Castle.class, castle);
 ```
+
+and **That's it.**
 
 ## Basic Rules
 

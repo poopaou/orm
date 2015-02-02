@@ -1,13 +1,12 @@
 # BASIC-ORM
 **Beta** Android database helper using Annotation processor and Sqlite database.
 
-Orm does not behave like 'traditional' orm libraries. Entities are not attached to any kind of 'state' or 'session',
-they're just simples java objects and can behave exactly like you expect.
+Orm does not behave like 'traditional' orm libraries. Entities are not attached to any kind of 'state' or 'session'.
  
 Perform create/read/update/delete operation as simple as you can and leave Basic-orm generate all the boring and error prone code.
 
-Basic-Orm main goal is to be simple and fast : no invasive code or reflection, just compile time generated code and sql.
-It also comes with some db optimisations like prepared statements, caching, Hibernate Criteria like querying, and version control.
+No invasive code or reflection, just compile time generated code and sql.
+It comes with some db optimisations like prepared statements, caching, Hibernate Criteria like querying (todo), and version control.
 
 ## Usage
 
@@ -68,7 +67,7 @@ castle = orm.loadById(Castle.class, id)
 castle.setName("Of AAAARRrrrrghhhhhh");
 orm.updateInTx(Castle.class, foo);
 
-// Delete (not a suitable place).
+// Delete.
 orm.deleteInTx(Castle.class, castle);
 ```
 
@@ -89,10 +88,10 @@ Entity must have a unique `@id` annotated field of type `long`
 ## Restrictions
 
 Orm is still a beta version, this include some limitations.
-* Only simple long primary key is supported.
-* Version field only support basic auto incremented field. 
-* Inner class are not supported (yet).
-* Foreign keys are not supported (yet).
+* Composite primary key aren't supported.
+* Primary key can only be of type long.
+* Version only supported for incremented field. 
+* Inner class aren't supported (yet).
 * Foreign object loading is not supported (and probably never will).
 * Database visioning is not supported (?).
 
